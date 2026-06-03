@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Southern Lakes – Quote Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --warm-white: #FDFAF5;
+    --charcoal: #1C1C1E;
+    --mid: #5A5A5A;
+    --soft: #9A9A9A;
+    --border: #E0D9CE;
+    --accent: #2C5F4A;
+    --accent-light: #E8F0EC;
+    --danger: #C0392B;
+    --gold: #B8922A;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--charcoal); min-height: 100vh; padding-bottom: 60px; }
+
+  header { background: var(--charcoal); color: white; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; }
+  header span { font-size: 0.75rem; color: #aaa; font-weight: 300; }
+
+  main { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+
+  .section { background: var(--warm-white); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  .section-header { padding: 14px 20px; background: var(--charcoal); color: white; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .section-body { padding: 20px; }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
+  input, select, textarea { width: 100%; padding: 13px 14px; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--charcoal); background: white; border: 1.5px solid var(--border); border-radius: 8px; outline: none; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .blind-card { border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 14px; background: white; overflow: hidden; }
+  .blind-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--cream); border-bottom: 1px solid var(--border); }
+  .blind-card-title { font-weight: 600; font-size: 0.95rem; }
+  .blind-card-sub { font-size: 0.75rem; color: var(--soft); margin-top: 2px; }
+  .blind-card-body { padding: 16px; }
+
+  .price-box { background: var(--accent-light); border: 1.5px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin-top: 14px; }
+  .price-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--mid); margin-bottom: 4px; }
+  .price-row.total { font-size: 1rem; font-weight: 700; color: var(--charcoal); margin-top: 6px; padding-top: 6px; border-top: 1px solid #c0d9cc; margin-bottom: 0; }
+  .price-row.total .amount { color: var(--accent); }
+  .price-error { color: var(--danger); font-size: 0.8rem; margin-top: 10px; font-weight: 500; padding: 10px; background: #FEF0EE; border-radius: 6px; }
+  .price-pending { color: var(--soft); font-size: 0.8rem; margin-top: 10px; font-style: italic; }
+
+  .summary-box { background: var(--charcoal); color: white; border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .summary-box h2 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 14px; color: #eee; }
+  .summary-line { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 6px; }
+  .summary-line.grand { font-size: 1.3rem; font-weight: 700; color: white; border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; }
+  .summary-line.grand .gst { font-size: 0.75rem; color: #888; font-weight: 400; margin-left: 6px; }
+
+  .discount-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .disc-btn { padding: 9px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: white; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--charcoal); transition: all 0.15s; }
+  .disc-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .custom-disc-wrap { display: flex; align-items: center; gap: 6px; }
+  .custom-disc-wrap input { width: 70px; }
+  .custom-disc-wrap span { font-size: 0.9rem; color: var(--mid); white-space: nowrap; }
+
+  .btn { display: block; width: 100%; padding: 15px; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; margin-bottom: 10px; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: white; color: var(--charcoal); border: 1.5px solid var(--border); }
+  .btn-gold { background: var(--gold); color: white; }
+  .btn-danger { background: none; border: none; color: var(--danger); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: 'DM Sans', sans-serif; }
+
+  .add-blind-btn { width: 100%; padding: 14px; border: 2px dashed var(--border); border-radius: var(--radius); background: none; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--mid); cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .add-blind-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 18px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--soft); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .order-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .order-table th { background: var(--cream); padding: 8px 10px; text-align: left; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .order-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+  .order-table tr:last-child td { border-bottom: none; }
+
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+  .badge-saved { background: var(--accent-light); color: var(--accent); }
+  .badge-unsaved { background: #FEF0EE; color: var(--danger); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--charcoal); color: white; padding: 12px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; z-index: 9999; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media print { header, .no-print { display: none !important; } body { background: white; } .section { box-shadow: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div><h1>Southern Lakes Blinds</h1><span>Quote & Order Tool</span></div>
+  <div id="saveStatus" class="status-badge badge-saved">Saved</div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('quote')">Quote</div>
+    <div class="tab" onclick="switchTab('order')">Order Form</div>
+  </div>
+
+  <!-- QUOTE TAB -->
+  <div id="tab-quote" class="tab-content active">
+
+    <div class="section">
+      <div class="section-header">Customer Details</div>
+      <div class="section-body">
+        <div class="field"><label>Name</label><input type="text" id="custName" placeholder="Full name" onchange="autosave()"></div>
+        <div class="row-2">
+          <div class="field"><label>Phone</label><input type="tel" id="custPhone" placeholder="021 000 0000" onchange="autosave()"></div>
+          <div class="field"><label>Email</label><input type="email" id="custEmail" placeholder="email@example.com" onchange="autosave()"></div>
+        </div>
+        <div class="field"><label>Address</label><input type="text" id="custAddress" placeholder="Installation address" onchange="autosave()"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">Honeycomb Blinds</div>
+      <div class="section-body">
+        <div id="blindsList"></div>
+        <button class="add-blind-btn" onclick="addBlind()">+ Add Blind</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">Discount</div>
+      <div class="section-body">
+        <div class="discount-options">
+          <button class="disc-btn active" onclick="setDiscount(0,this)">No Discount</button>
+          <button class="disc-btn" onclick="setDiscount(10,this)">10%</button>
+          <button class="disc-btn" onclick="setDiscount(20,this)">20%</button>
+          <div class="custom-disc-wrap">
+            <input type="number" id="customDisc" min="0" max="50" placeholder="0" oninput="setCustomDiscount(this)">
+            <span>% custom</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-box">
+      <h2>Quote Summary</h2>
+      <div class="summary-line"><span>Subtotal (excl. GST)</span><span id="summarySubtotal">$0.00</span></div>
+      <div class="summary-line" id="discountLine" style="display:none"><span id="discountLabel">Discount</span><span id="summaryDiscount">-$0.00</span></div>
+      <div class="summary-line"><span>After discount</span><span id="summaryAfterDiscount">$0.00</span></div>
+      <div class="summary-line"><span>GST (15%)</span><span id="summaryGST">$0.00</span></div>
+      <div class="summary-line grand"><span>Total <span class="gst">incl. GST</span></span><span id="summaryTotal">$0.00</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">Notes</div>
+      <div class="section-body">
+        <textarea id="quoteNotes" rows="3" placeholder="Any special instructions..." onchange="autosave()" style="resize:vertical"></textarea>
+      </div>
+    </div>
+
+    <div class="no-print">
+      <button class="btn btn-primary" onclick="switchTab('order')">View Order Form →</button>
+      <button class="btn btn-secondary" onclick="window.print()">Print / Save PDF</button>
+      <button class="btn btn-gold" onclick="exportCSV()">Export McCrae's Order (.csv)</button>
+    </div>
+  </div>
+
+  <!-- ORDER TAB -->
+  <div id="tab-order" class="tab-content">
+    <div class="section">
+      <div class="section-header">McCrae's Order Form</div>
+      <div class="section-body" style="overflow-x:auto">
+        <p style="font-size:0.8rem;color:var(--soft);margin-bottom:12px;">No sell pricing shown — this goes to McCrae's.</p>
+        <table class="order-table">
+          <thead><tr><th>#</th><th>Location</th><th>Width</th><th>Drop</th><th>Control</th><th>Fabric</th><th>Fabric Colour</th><th>Rail Colour</th><th>Component</th><th>Chain</th><th>Side</th><th>Side Tracks</th></tr></thead>
+          <tbody id="orderBody"><tr><td colspan="12" style="text-align:center;color:var(--soft);padding:20px">No items yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Order Details</div>
+      <div class="section-body">
+        <div class="row-2">
+          <div class="field"><label>Order Number</label><input type="text" id="orderNum" placeholder="e.g. SL-001" onchange="autosave()"></div>
+          <div class="field"><label>Date</label><input type="text" id="orderDate" onchange="autosave()"></div>
+        </div>
+        <div class="field"><label>Notes to McCrae's</label><textarea id="orderNotes" rows="3" placeholder="Special requirements..." onchange="autosave()" style="resize:vertical"></textarea></div>
+      </div>
+    </div>
+    <div class="no-print">
+      <button class="btn btn-primary" onclick="window.print()">Print Order Form</button>
+      <button class="btn btn-gold" onclick="exportCSV()">Export as .csv</button>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PRICING TABLES ──────────────────────────────────────────
+const WIDTHS_CHAIN  = [600,750,900,1050,1200,1350,1500,1650,1800,1950,2100,2250,2400,2550,2700,2850,3000];
+const DROPS_CHAIN   = [600,750,900,1050,1200,1350,1500,1650,1800,1950,2100,2250,2400,2550,2700,2850,3000];
+const WIDTHS_CORD   = [600,750,900,1050,1200,1350,1500,1650,1800,1950,2100,2250,2400];
+const DROPS_CORD    = [600,750,900,1050,1200,1350,1500,1650,1800];
+
+const PRICES = {
+  'Luna_Dimout|Chain': {
+    w: WIDTHS_CHAIN, d: DROPS_CHAIN,
+    data: [
+      [238,246,256,276,287,306,315,335,346,366,376,394,406,395,405,414,425],
+      [245,255,265,288,301,321,333,355,367,390,403,422,436,426,438,449,461],
+      [251,263,275,300,314,337,351,375,389,415,429,451,467,457,470,483,497],
+      [270,284,298,312,328,353,368,395,411,439,455,480,497,487,503,518,534],
+      [277,292,308,324,341,369,386,415,433,463,481,508,528,518,535,552,570],
+      [293,311,329,347,367,385,403,435,454,487,507,537,558,549,568,586,606],
+      [300,319,340,359,381,400,421,455,476,512,533,565,589,580,601,621,642],
+      [317,339,362,384,408,430,453,474,498,536,560,594,620,610,633,655,678],
+      [324,348,373,396,422,446,471,494,519,560,586,623,650,641,666,690,715],
+      [342,368,396,422,451,477,504,531,558,585,612,651,681,672,698,724,751],
+      [350,378,407,435,466,494,523,551,581,609,638,680,711,703,731,758,787],
+      [364,395,427,457,490,521,553,583,615,646,678,708,742,734,764,793,823],
+      [374,406,440,467,502,530,563,592,626,662,695,737,772,764,796,827,859],
+      [386,420,456,484,520,549,584,614,650,687,722,766,803,795,829,862,896],
+      [398,434,472,500,539,569,606,636,673,711,748,794,834,826,861,896,932],
+      [409,448,488,517,558,588,627,658,697,736,775,823,864,857,894,930,968],
+      [421,462,504,534,577,608,649,680,721,761,802,851,895,888,927,965,1004]
+    ]
+  },
+  'Halo_Translucent|Chain': {
+    w: WIDTHS_CHAIN, d: DROPS_CHAIN,
+    data: [
+      [236,244,252,272,282,300,309,328,338,357,367,384,395,384,393,402,411],
+      [242,251,261,283,295,315,325,346,358,380,391,410,423,413,424,434,445],
+      [248,259,270,294,307,330,342,365,378,403,416,437,452,441,454,466,479],
+      [266,279,292,305,320,344,358,384,399,426,440,464,480,470,485,499,513],
+      [272,287,302,317,333,359,375,403,419,448,465,491,509,499,515,531,547],
+      [288,305,322,339,357,374,391,421,439,471,489,518,538,528,546,563,581],
+      [295,313,332,350,370,389,408,440,460,494,514,544,566,557,576,595,615],
+      [311,332,353,374,396,417,438,459,480,517,538,571,595,586,607,628,649],
+      [318,340,363,386,410,432,455,477,501,539,563,598,623,615,637,660,683],
+      [335,360,385,410,437,462,487,512,537,562,587,625,652,644,668,692,717],
+      [342,369,396,422,451,477,504,531,558,585,612,652,681,672,699,724,751],
+      [356,385,415,443,474,503,532,561,591,620,650,678,709,701,729,757,785],
+      [365,396,427,453,485,511,541,570,601,635,665,705,738,730,760,789,819],
+      [377,409,442,468,502,529,562,591,623,658,690,732,766,759,790,821,853],
+      [388,422,457,484,520,548,582,611,645,681,715,759,795,788,821,853,887],
+      [399,435,472,500,538,566,602,632,668,704,740,786,824,817,851,886,921],
+      [410,449,488,516,556,584,622,653,690,727,765,812,852,846,882,918,955]
+    ]
+  },
+  'Luna_Dimout|Cord': {
+    w: WIDTHS_CORD, d: DROPS_CORD,
+    data: [
+      [151,159,168,184,194,209,218,234,244,261,271,286,297],
+      [158,167,178,196,207,224,236,254,null,null,null,null,null],
+      [164,175,187,208,221,240,null,null,null,null,null,null,null],
+      [179,192,206,220,234,null,null,null,null,null,null,null,null],
+      [186,201,216,232,null,null,null,null,null,null,null,null,null],
+      [199,216,234,null,null,null,null,null,null,null,null,null,null],
+      [206,225,null,null,null,null,null,null,null,null,null,null,null],
+      [220,241,null,null,null,null,null,null,null,null,null,null,null],
+      [227,null,null,null,null,null,null,null,null,null,null,null,null]
+    ]
+  },
+  'Halo_Translucent|Cord': {
+    w: WIDTHS_CORD, d: DROPS_CORD,
+    data: [
+      [142,149,156,171,180,193,202,216,225,240,249,262,272],
+      [148,156,165,182,192,207,217,234,null,null,null,null,null],
+      [153,163,174,192,204,222,null,null,null,null,null,null,null],
+      [167,179,191,203,216,null,null,null,null,null,null,null,null],
+      [173,186,200,214,null,null,null,null,null,null,null,null,null],
+      [185,200,216,null,null,null,null,null,null,null,null,null,null],
+      [191,208,null,null,null,null,null,null,null,null,null,null,null],
+      [204,223,null,null,null,null,null,null,null,null,null,null,null],
+      [210,null,null,null,null,null,null,null,null,null,null,null,null]
+    ]
+  }
+};
+
+function lookupPrice(fabric, control, width, drop) {
+  const key = `${fabric}|${control}`;
+  const t = PRICES[key];
+  if (!t) return null;
+  const wi = t.w.findIndex(w => w >= width);
+  const di = t.d.findIndex(d => d >= drop);
+  if (wi === -1 || di === -1) return null;
+  return t.data[di][wi] || null;
+}
+
+// ── COLOUR LISTS ─────────────────────────────────────────────
+const LUNA_COLOURS = ['Bone','Charcoal','Cloud','Dusky Rose','Graphite','Mineral','Pumice','Sage','Taupe','Walnut'];
+const HALO_COLOURS = ['Birch','Duck Egg','Frost','Iron','Ivory','Meteor','Mushroom','Praline','Soft Damson','Willow'];
+const RAIL_COLOURS = ['Arctic White','Black','Bronco','Brown','Desert Sand','Off White','Silver Star'];
+const CHAIN_LENGTHS = [500,750,1000,1200,1500,1800,2000];
+
+// ── STATE ─────────────────────────────────────────────────────
+let blinds = [];
+let discountPct = 0;
+let nextId = 1;
+
+// ── ADD BLIND ─────────────────────────────────────────────────
+function addBlind() {
+  const id = nextId++;
+  const b = { id, location:'', width:'', drop:'', fabricType:'Luna_Dimout', controlType:'Chain', fabricColour:'', railColour:'Arctic White', customRail:false, componentColour:'White', chainLength:'1000', controlSide:'Left', sideTracks:'No', sideTrackDrop:'' };
+  blinds.push(b);
+  appendBlindCard(b);
+  updateSummary();
+  autosave();
+}
+
+function appendBlindCard(b) {
+  const container = document.getElementById('blindsList');
+  const div = document.createElement('div');
+  div.className = 'blind-card';
+  div.id = `blind-${b.id}`;
+  div.innerHTML = blindCardHTML(b);
+  container.appendChild(div);
+  setTimeout(() => div.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function blindCardHTML(b) {
+  const fabricColours = b.fabricType === 'Luna_Dimout' ? LUNA_COLOURS : HALO_COLOURS;
+  const isChain = b.controlType === 'Chain';
+
+  const fabricOptions = ['Luna_Dimout','Halo_Translucent'].map(f =>
+    `<option value="${f}" ${b.fabricType===f?'selected':''}>${f.replace('_',' ')}</option>`).join('');
+  const controlOptions = ['Chain','Cord'].map(c =>
+    `<option value="${c}" ${b.controlType===c?'selected':''}>${c} Drive</option>`).join('');
+  const fabricColourOptions = ['<option value="">Select colour...</option>',...fabricColours.map(c =>
+    `<option value="${c}" ${b.fabricColour===c?'selected':''}>${c}</option>`)].join('');
+  const railOptions = [...RAIL_COLOURS.map(c =>
+    `<option value="${c}" ${b.railColour===c?'selected':''}>${c}</option>`),
+    `<option value="Custom" ${b.railColour==='Custom'?'selected':''}>Custom colour (+$110)</option>`].join('');
+  const compOptions = ['Black','Grey','White'].map(c =>
+    `<option value="${c}" ${b.componentColour===c?'selected':''}>${c}</option>`).join('');
+  const chainOptions = CHAIN_LENGTHS.map(l =>
+    `<option value="${l}" ${b.chainLength==l?'selected':''}>${l}mm</option>`).join('');
+
+  return `
+    <div class="blind-card-header">
+      <div>
+        <div class="blind-card-title" id="blind-title-${b.id}">Blind — ${b.location||'New'}</div>
+        <div class="blind-card-sub" id="blind-sub-${b.id}">${b.width&&b.drop?b.width+'W × '+b.drop+'D mm':'Enter dimensions'}</div>
+      </div>
+      <button class="btn-danger" onclick="removeBlind(${b.id})">Remove</button>
+    </div>
+    <div class="blind-card-body">
+      <div class="field">
+        <label>Room / Location</label>
+        <input type="text" value="${b.location}" placeholder="e.g. Living Room"
+          onchange="setField(${b.id},'location',this.value)">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Fabric Type</label>
+          <select onchange="setField(${b.id},'fabricType',this.value);rebuildCard(${b.id})">
+            ${fabricOptions}
+          </select>
+        </div>
+        <div class="field">
+          <label>Control Type</label>
+          <select onchange="setField(${b.id},'controlType',this.value);rebuildCard(${b.id})">
+            ${controlOptions}
+          </select>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Width (mm)</label>
+          <input type="number" inputmode="numeric" id="w-${b.id}" value="${b.width}" placeholder="e.g. 1200"
+            onchange="setField(${b.id},'width',this.value)">
+        </div>
+        <div class="field">
+          <label>Drop (mm)</label>
+          <input type="number" inputmode="numeric" id="d-${b.id}" value="${b.drop}" placeholder="e.g. 1500"
+            onchange="setField(${b.id},'drop',this.value)">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Fabric Colour</label>
+          <select onchange="setField(${b.id},'fabricColour',this.value)">
+            ${fabricColourOptions}
+          </select>
+        </div>
+        <div class="field">
+          <label>Rail Colour</label>
+          <select onchange="setField(${b.id},'railColour',this.value)">
+            ${railOptions}
+          </select>
+        </div>
+      </div>
+      ${isChain ? `
+      <div class="row-2">
+        <div class="field">
+          <label>Component Colour</label>
+          <select onchange="setField(${b.id},'componentColour',this.value)">${compOptions}</select>
+        </div>
+        <div class="field">
+          <label>Chain Length</label>
+          <select onchange="setField(${b.id},'chainLength',this.value)">${chainOptions}</select>
+        </div>
+      </div>` : ''}
+      <div class="row-2">
+        <div class="field">
+          <label>Control Side</label>
+          <select onchange="setField(${b.id},'controlSide',this.value)">
+            <option value="Left" ${b.controlSide==='Left'?'selected':''}>Left</option>
+            <option value="Right" ${b.controlSide==='Right'?'selected':''}>Right</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Side Tracks</label>
+          <select onchange="setField(${b.id},'sideTracks',this.value);rebuildCard(${b.id})">
+            <option value="No" ${b.sideTracks==='No'?'selected':''}>No</option>
+            <option value="Yes" ${b.sideTracks==='Yes'?'selected':''}>Yes (+$44/m/pair)</option>
+          </select>
+        </div>
+      </div>
+      ${b.sideTracks==='Yes' ? `
+      <div class="field">
+        <label>Side Track Drop (mm)</label>
+        <input type="number" inputmode="numeric" value="${b.sideTrackDrop}" placeholder="e.g. 1500"
+          onchange="setField(${b.id},'sideTrackDrop',this.value)">
+      </div>` : ''}
+      <div id="price-${b.id}"></div>
+    </div>`;
+}
+
+// Set a field value without re-rendering the whole card
+function setField(id, field, value) {
+  const b = blinds.find(b => b.id === id);
+  if (!b) return;
+  b[field] = value;
+  // Update header text
+  const titleEl = document.getElementById(`blind-title-${id}`);
+  const subEl = document.getElementById(`blind-sub-${id}`);
+  if (titleEl) titleEl.textContent = `Blind — ${b.location||'New'}`;
+  if (subEl) subEl.textContent = b.width && b.drop ? `${b.width}W × ${b.drop}D mm` : 'Enter dimensions';
+  // Update price display only
+  updatePriceDisplay(b);
+  updateSummary();
+  autosave();
+}
+
+// Only rebuild the whole card when fabric type or control type changes (affects available colour options etc)
+function rebuildCard(id) {
+  const b = blinds.find(b => b.id === id);
+  if (!b) return;
+  const card = document.getElementById(`blind-${id}`);
+  if (!card) return;
+  card.innerHTML = blindCardHTML(b);
+  updatePriceDisplay(b);
+}
+
+function removeBlind(id) {
+  blinds = blinds.filter(b => b.id !== id);
+  const el = document.getElementById(`blind-${id}`);
+  if (el) el.remove();
+  updateSummary();
+  autosave();
+}
+
+function updatePriceDisplay(b) {
+  const el = document.getElementById(`price-${b.id}`);
+  if (!el) return;
+  const w = parseInt(b.width);
+  const d = parseInt(b.drop);
+  if (!w || !d) { el.innerHTML = ''; b.retail = null; b.wholesale = null; return; }
+
+  if (w < 390 || w > 3000) { el.innerHTML = `<div class="price-error">⚠ Width must be 390–3000mm</div>`; b.retail = null; return; }
+  if (d < 300 || d > 3000) { el.innerHTML = `<div class="price-error">⚠ Drop must be 300–3000mm</div>`; b.retail = null; return; }
+
+  const basePrice = lookupPrice(b.fabricType, b.controlType, w, d);
+  if (!basePrice) { el.innerHTML = `<div class="price-error">⚠ Size not available for ${b.fabricType.replace('_',' ')} ${b.controlType} Drive. Max width 2400mm for Cord Drive.</div>`; b.retail = null; return; }
+
+  let total = basePrice;
+  if (b.sideTracks === 'Yes' && b.sideTrackDrop) total += 44 * (parseFloat(b.sideTrackDrop) / 1000);
+  if (b.railColour === 'Custom') total += 110;
+
+  b.wholesale = total;
+  b.retail = total * 2.1;
+
+  el.innerHTML = `
+    <div class="price-box">
+      <div class="price-row"><span>Wholesale (excl. GST)</span><span>$${total.toFixed(2)}</span></div>
+      <div class="price-row total"><span>Customer Price (excl. GST)</span><span class="amount">$${b.retail.toFixed(2)}</span></div>
+    </div>`;
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────
+function fmt(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+
+function updateSummary() {
+  const subtotal = blinds.reduce((s,b) => s + (b.retail||0), 0);
+  const disc = subtotal * (discountPct/100);
+  const after = subtotal - disc;
+  const gst = after * 0.15;
+  const total = after + gst;
+  document.getElementById('summarySubtotal').textContent = fmt(subtotal);
+  document.getElementById('summaryAfterDiscount').textContent = fmt(after);
+  document.getElementById('summaryGST').textContent = fmt(gst);
+  document.getElementById('summaryTotal').textContent = fmt(total);
+  const dl = document.getElementById('discountLine');
+  if (discountPct > 0) {
+    dl.style.display = 'flex';
+    document.getElementById('discountLabel').textContent = `Discount (${discountPct}%)`;
+    document.getElementById('summaryDiscount').textContent = `-${fmt(disc)}`;
+  } else { dl.style.display = 'none'; }
+
+  // Update order table
+  const tbody = document.getElementById('orderBody');
+  if (!tbody) return;
+  if (blinds.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--soft);padding:20px">No items yet</td></tr>';
+  } else {
+    tbody.innerHTML = blinds.map((b,i) => `<tr>
+      <td>${i+1}</td><td>${b.location||'—'}</td><td>${b.width||'—'}</td><td>${b.drop||'—'}</td>
+      <td>${b.controlType} Drive</td><td>${b.fabricType.replace('_',' ')}</td>
+      <td>${b.fabricColour||'—'}</td><td>${b.railColour||'—'}</td>
+      <td>${b.controlType==='Chain'?(b.componentColour||'—'):'Clear'}</td>
+      <td>${b.controlType==='Chain'?(b.chainLength||'—'):'—'}</td>
+      <td>${b.controlSide||'—'}</td>
+      <td>${b.sideTracks}${b.sideTracks==='Yes'&&b.sideTrackDrop?' ('+b.sideTrackDrop+'mm)':''}</td>
+    </tr>`).join('');
+  }
+}
+
+// ── DISCOUNT ──────────────────────────────────────────────────
+function setDiscount(pct, btn) {
+  discountPct = pct;
+  document.querySelectorAll('.disc-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('customDisc').value = '';
+  updateSummary();
+  autosave();
+}
+function setCustomDiscount(inp) {
+  discountPct = parseFloat(inp.value)||0;
+  document.querySelectorAll('.disc-btn').forEach(b => b.classList.remove('active'));
+  updateSummary();
+  autosave();
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['quote','order'][i]===tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportCSV() {
+  const custName = document.getElementById('custName').value;
+  const custAddr = document.getElementById('custAddress').value;
+  const orderNum = document.getElementById('orderNum').value;
+  const orderDate = document.getElementById('orderDate').value;
+  const notes = document.getElementById('orderNotes').value;
+  let csv = 'McCraes Blinds & Screens - Honeycomb Blind Order Form\n';
+  csv += `FROM:,"${custName}"\nADDRESS:,"${custAddr}"\nORDER NUMBER:,"${orderNum}"\nDATE:,"${orderDate}"\n\n`;
+  csv += 'ITEM,LOCATION,WIDTH (MM),DROP (MM),CONTROL TYPE,FABRIC TYPE,FABRIC COLOUR,RAIL COLOUR,COMPONENT COLOUR,CHAIN LENGTH (MM),CONTROL SIDE,SIDE TRACKS\n';
+  blinds.forEach((b,i) => {
+    csv += [i+1, b.location, b.width, b.drop, b.controlType+' Drive', b.fabricType.replace('_',' '),
+      b.fabricColour, b.railColour, b.controlType==='Chain'?b.componentColour:'Clear',
+      b.controlType==='Chain'?b.chainLength:'', b.controlSide,
+      b.sideTracks+(b.sideTracks==='Yes'&&b.sideTrackDrop?' ('+b.sideTrackDrop+'mm)':'')
+    ].map(v=>`"${v||''}"`).join(',') + '\n';
+  });
+  if (notes) csv += `\nNotes:,"${notes}"\n`;
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `McCraes_Order_${orderNum||'draft'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('Order exported!');
+}
+
+// ── SAVE / LOAD ───────────────────────────────────────────────
+function autosave() {
+  try {
+    localStorage.setItem('slq2', JSON.stringify({ blinds, discountPct, nextId,
+      custName: document.getElementById('custName').value,
+      custPhone: document.getElementById('custPhone').value,
+      custEmail: document.getElementById('custEmail').value,
+      custAddress: document.getElementById('custAddress').value,
+      quoteNotes: document.getElementById('quoteNotes').value,
+      orderNum: document.getElementById('orderNum').value,
+      orderDate: document.getElementById('orderDate').value,
+      orderNotes: document.getElementById('orderNotes').value,
+    }));
+    document.getElementById('saveStatus').textContent = 'Saved';
+    document.getElementById('saveStatus').className = 'status-badge badge-saved';
+  } catch(e) {
+    document.getElementById('saveStatus').textContent = 'Not saved';
+    document.getElementById('saveStatus').className = 'status-badge badge-unsaved';
+  }
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('slq2'));
+    if (!s) return false;
+    document.getElementById('custName').value = s.custName||'';
+    document.getElementById('custPhone').value = s.custPhone||'';
+    document.getElementById('custEmail').value = s.custEmail||'';
+    document.getElementById('custAddress').value = s.custAddress||'';
+    document.getElementById('quoteNotes').value = s.quoteNotes||'';
+    document.getElementById('orderNum').value = s.orderNum||'';
+    document.getElementById('orderDate').value = s.orderDate||'';
+    document.getElementById('orderNotes').value = s.orderNotes||'';
+    blinds = s.blinds||[];
+    discountPct = s.discountPct||0;
+    nextId = s.nextId||1;
+    blinds.forEach(b => appendBlindCard(b));
+    blinds.forEach(b => updatePriceDisplay(b));
+    updateSummary();
+    return true;
+  } catch(e) { return false; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('orderDate').value = new Date().toLocaleDateString('en-NZ');
+  const loaded = loadState();
+  if (!loaded || blinds.length === 0) addBlind();
+});
+</script>
+</body>
+</html>
