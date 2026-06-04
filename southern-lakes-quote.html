@@ -1769,7 +1769,7 @@ function printOrderSheet(type){
   // ── HONEYCOMB ──────────────────────────────────────────────
   if(type==='honeycomb'){
     if(!hbItems.length){showToast('No honeycomb blinds on this order');return;}
-    const rows=hbItems.map((b,i)=>`<tr>
+    let rows=hbItems.map((b,i)=>`<tr>
       <td>${i+1}${b.location?'<br><span style="font-size:8px">'+b.location+'</span>':''}</td>
       <td>${b.width||''}</td>
       <td>${b.drop||''}</td>
@@ -1813,7 +1813,7 @@ function printOrderSheet(type){
   // ── PLEATED ────────────────────────────────────────────────
   else if(type==='pleated'){
     if(!pdItems.length){showToast('No pleated doors/windows on this order');return;}
-    const rows=pdItems.map((p,i)=>`<tr>
+    let rows=pdItems.map((p,i)=>`<tr>
       <td class="loc">${p.location||i+1}</td>
       <td>${p.height||''}</td>
       <td>${p.track||''}</td>
@@ -1867,7 +1867,7 @@ function printOrderSheet(type){
   // ── ROLLAWAY ───────────────────────────────────────────────
   else if(type==='rollaway'){
     if(!rollItems.length){showToast('No rollaway screens on this order');return;}
-    const rows=rollItems.map((r,i)=>`<tr>
+    let rows=rollItems.map((r,i)=>`<tr>
       <td class="loc">${r.location||''}</td>
       <td>${r.cassette||''}</td>
       <td>${r.track||''}</td>
