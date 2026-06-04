@@ -336,9 +336,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="no-print">
       <button class="btn btn-s" onclick="newQuote()" style="border-color:var(--danger);color:var(--danger)">🗑 Start New Quote</button>
-      <button class="btn btn-p" onclick="exportAllOrders('honeycomb')" id="btnHBExport">Export Honeycomb Order (.xlsx)</button>
-      <button class="btn btn-b" onclick="exportAllOrders('pleated')" id="btnPDExport">Export Pleated Door Order (.xlsx)</button>
-      <button class="btn btn-s" onclick="exportAllOrders('rollaway')" id="btnROExport">Export Rollaway Order (.xlsx)</button>
+      <button class="btn btn-p" onclick="printOrderSheet('honeycomb')">Print Honeycomb Order</button>
+      <button class="btn btn-b" onclick="printOrderSheet('pleated')">Print Pleated Door Order</button>
+      <button class="btn" style="background:#1A5C7A;color:white" onclick="printOrderSheet('rollaway')">Print Rollaway Order</button>
     </div>
   </div>
 
@@ -1343,14 +1343,28 @@ function updateMagPrice(item,el){
   if(d<300||d>2350){el.innerHTML='<div class="price-error">⚠ Drop must be 300–2350mm</div>';item.retail=null;return;}
   const wholesale=lookupMag(w,d);
   if(!wholesale){el.innerHTML='<div class="price-error">⚠ Size not in price guide</div>';item.retail=null;return;}
-  const guidePrice=wholesale+110;
+  // Angle cost
+  let angleWholesale=0; let angleDesc='';
+  if(item.angleSize&&item.angleSize!=='none'){
+    const angleRates={'1225':13.50,'2020':14,'2030':14,'2040':14,'2050':15,'2570':20,'uchannel':17.63};
+    const ratePerM=item.angleSize==='custom'?(parseFloat(item.customAnglePrice)||16):(angleRates[item.angleSize]||14);
+    const hM=((parseInt(item.d1)||0)+(parseInt(item.d2)||0))/1000;
+    const wM=((parseInt(item.w1)||0)+(parseInt(item.w2)||0))/1000;
+    const sideMap={'all4':wM+wM+hM+hM,'3sides_top_bottom_left':wM+wM+hM,'3sides_top_bottom_right':wM+wM+hM,'top_bottom':wM+wM,'left_right':hM+hM,'top_only':wM,'bottom_only':wM,'left_only':hM,'right_only':hM};
+    const metres=sideMap[item.angleSides||'all4']||0;
+    angleWholesale=ratePerM*metres;
+    angleDesc=metres.toFixed(2)+'m @ $'+ratePerM+'/m';
+  }
+  const guidePrice=wholesale+110+angleWholesale;
   const cost=calcMagMaterialCost(item);
   item.materialCost=cost?cost.total:null;
   const sellPrice=item.sellPrice?parseFloat(item.sellPrice):guidePrice;
   item.retail=sellPrice;
   const spInput=document.getElementById('sellprice-'+item.id);
   if(spInput&&!spInput.value)spInput.placeholder='$'+guidePrice.toFixed(2)+' (suggested)';
-  let html=`<div class="price-box"><div class="price-row"><span>McCrae's guide + $110</span><span>$${guidePrice.toFixed(2)}</span></div><div class="price-row total"><span>Your sell price (excl. GST)</span><span class="amt">$${sellPrice.toFixed(2)}</span></div></div>`;
+  let html=`<div class="price-box"><div class="price-row"><span>McCrae's guide + $110</span><span>$${(wholesale+110).toFixed(2)}</span></div>`;
+  if(angleWholesale>0)html+=`<div class="price-row"><span>Angles — ${angleDesc}</span><span>$${angleWholesale.toFixed(2)}</span></div>`;
+  html+=`<div class="price-row total"><span>Your sell price (excl. GST)</span><span class="amt">$${sellPrice.toFixed(2)}</span></div></div>`;
   if(cost){html+=`<div class="cost-box"><div class="cost-row"><span>Frame tape</span><span>$${cost.frameTape.toFixed(2)}</span></div><div class="cost-row"><span>Screen tape</span><span>$${cost.screenTape.toFixed(2)}</span></div><div class="cost-row"><span>Designer coil</span><span>$${cost.coil.toFixed(2)}</span></div><div class="cost-row"><span>Corners</span><span>$${cost.cornerCost.toFixed(2)}</span></div><div class="cost-row"><span>Mesh</span><span>$${cost.meshCost.toFixed(2)}</span></div><div class="cost-row"><span>Glue (est.)</span><span>$${GLUE_COST.toFixed(2)}</span></div><div class="cost-row total"><span>Material cost · Suggested @ 200% markup</span><span>$${cost.total.toFixed(2)} · $${cost.suggestedRetail.toFixed(2)}</span></div></div>`;}
   el.innerHTML=html;
 }
@@ -1431,20 +1445,39 @@ function addPhoto(id){
     reader.onload=ev=>{
       const item=items.find(i=>i.id===id);if(!item)return;
       if(!item.photos)item.photos=[];
-      item.photos.push(ev.target.result);
-      const grid=document.getElementById('photos-'+id);
-      if(grid){const thumbs=item.photos.map((src,i)=>`<div class="photo-thumb-wrap"><img class="photo-thumb" src="${src}"><button class="photo-del" onclick="removePhoto(${id},${i})">×</button></div>`).join('');grid.innerHTML=thumbs+`<button class="photo-add-btn" onclick="addPhoto(${id})"><span style="font-size:1.4rem">📷</span><span>Add</span></button>`;}
-      autosave();
-    };reader.readAsDataURL(file);
-  };input.click();
+      // Compress image to max 800px wide before storing
+      const img=new Image();
+      img.onload=function(){
+        const canvas=document.createElement('canvas');
+        const maxW=800;
+        const scale=img.width>maxW?maxW/img.width:1;
+        canvas.width=img.width*scale;
+        canvas.height=img.height*scale;
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        const compressed=canvas.toDataURL('image/jpeg',0.7);
+        item.photos.push(compressed);
+        const grid=document.getElementById('photos-'+id);
+        if(grid){const thumbs=item.photos.map((src,i)=>`<div class="photo-thumb-wrap"><img class="photo-thumb" src="${src}"><button class="photo-del" onclick="removePhoto(${id},${i})">×</button></div>`).join('');grid.innerHTML=thumbs+`<button class="photo-add-btn" onclick="addPhoto(${id})"><span style="font-size:1.4rem">📷</span><span>Add</span></button>`;}
+        try{autosave();}catch(e){showToast('Photo saved but storage full — delete old photos');}
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
 }
+
 function removePhoto(id,idx){
   const item=items.find(i=>i.id===id);if(!item||!item.photos)return;
   item.photos.splice(idx,1);
   const grid=document.getElementById('photos-'+id);
-  if(grid){const thumbs=item.photos.map((src,i)=>`<div class="photo-thumb-wrap"><img class="photo-thumb" src="${src}"><button class="photo-del" onclick="removePhoto(${id},${i})">×</button></div>`).join('');grid.innerHTML=thumbs+`<button class="photo-add-btn" onclick="addPhoto(${id})"><span style="font-size:1.4rem">📷</span><span>Add</span></button>`;}
+  if(grid){
+    const thumbs=item.photos.map((src,i)=>`<div class="photo-thumb-wrap"><img class="photo-thumb" src="${src}"><button class="photo-del" onclick="removePhoto(${id},${i})">×</button></div>`).join('');
+    grid.innerHTML=thumbs+`<button class="photo-add-btn" onclick="addPhoto(${id})"><span style="font-size:1.4rem">📷</span><span>Add</span></button>`;
+  }
   autosave();
 }
+
 function notesFieldHTML(item){
   return `<div class="field" style="margin-top:12px"><label>Notes</label><textarea rows="2" style="resize:vertical" placeholder="Any notes for this item..." onchange="setF(${item.id},'notes',this.value)">${item.notes||''}</textarea></div>`;
 }
@@ -1627,7 +1660,7 @@ function printPage(bodyContent, type){
 
   // Replace page content
   document.open();
-  document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + (type==='quote'?'Quote':'Cutting Sheet') + '</title><style>' + printCSS + '</style></head><body>' + bodyContent + '<button class="back-btn" onclick="history.back()">← Back</button></body></html>');
+  document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + (type==='quote'?'Quote':'Cutting Sheet') + '</title><style>' + printCSS + '</style></head><body>' + bodyContent + '<button class="back-btn" onclick="window.location.reload()">← Back to App</button></body></html>');
   document.close();
 }
 
@@ -1694,6 +1727,193 @@ function newQuote(){
   updateSummary();
   switchTab('customer');
   showToast('New quote started!');
+}
+
+function printOrderSheet(type){
+  const custName=document.getElementById('custName').value||'—';
+  const orderDate=document.getElementById('orderDate').value||new Date().toLocaleDateString('en-NZ');
+  const notes=document.getElementById('orderNotes').value||'';
+  const OUR_NAME='Southern Lakes Shade & Screens';
+  const OUR_ADDR='37a Sargood Road, Wanaka';
+  const OUR_PHONE='021 224 0908';
+
+  const hbItems=items.filter(i=>i.type==='honeycomb');
+  const pdItems=items.filter(i=>i.type==='pleated');
+  const rollItems=items.filter(i=>i.type==='rollaway');
+
+  const angleLabels={'1225':'12x25','2020':'20x20','2030':'20x30','2040':'20x40','2050':'20x50','2570':'25x70','uchannel':'U Channel','custom':'Custom','none':''};
+  const sideLabels={'all4':'all sides','3sides_top_bottom_left':'T+B+L','3sides_top_bottom_right':'T+B+R','top_bottom':'T+B','left_right':'L+R','top_only':'Top','bottom_only':'Bottom','left_only':'Left','right_only':'Right'};
+
+  const baseCSS=`
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;font-size:10px;}
+    body{padding:12px;background:white;color:#000;}
+    .header-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+    .title-row{font-size:13px;font-weight:bold;border:1px solid #000;padding:4px 6px;margin-bottom:6px;text-align:left;}
+    .field-row{display:flex;gap:4px;margin-bottom:4px;align-items:center;}
+    .field-label{font-weight:bold;white-space:nowrap;}
+    .field-val{border-bottom:1px solid #000;flex:1;padding:1px 4px;min-width:80px;}
+    table{width:100%;border-collapse:collapse;margin-top:8px;}
+    th{background:#d0d0d0;border:1px solid #000;padding:3px 4px;text-align:center;font-weight:bold;font-size:9px;}
+    td{border:1px solid #000;padding:3px 4px;text-align:center;min-height:16px;font-size:9px;}
+    td.loc{text-align:left;}
+    .notes-box{border:1px solid #000;padding:6px;margin-top:8px;min-height:40px;font-size:9px;}
+    .notes-label{font-weight:bold;margin-bottom:4px;}
+    .back-btn{display:block;width:160px;margin:16px auto 0;padding:10px;background:#2C5F4A;color:white;border:none;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center;}
+    @media print{.back-btn{display:none!important;} body{padding:6px;}}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .email-right{text-align:right;font-size:9px;color:#333;}
+  `;
+
+  let body='';
+
+  // ── HONEYCOMB ──────────────────────────────────────────────
+  if(type==='honeycomb'){
+    if(!hbItems.length){showToast('No honeycomb blinds on this order');return;}
+    const rows=hbItems.map((b,i)=>`<tr>
+      <td>${i+1}${b.location?'<br><span style="font-size:8px">'+b.location+'</span>':''}</td>
+      <td>${b.width||''}</td>
+      <td>${b.drop||''}</td>
+      <td>${b.controlType||''} Drive</td>
+      <td>${b.fabricType?b.fabricType.replace('_',' '):''}</td>
+      <td>${b.fabricColour||''}</td>
+      <td>${b.railColour||''}</td>
+      <td>${b.controlType==='Chain'?(b.componentColour||''):'Clear'}</td>
+      <td>${b.controlType==='Chain'?(b.chainLength||''):''}</td>
+      <td>${b.controlSide||''}</td>
+      <td>${b.sideTracks||'No'}${b.sideTracks==='Yes'&&b.sideTrackDrop?' ('+b.sideTrackDrop+'mm)':''}</td>
+    </tr>`).join('');
+    // Empty rows to fill to 10
+    for(let i=hbItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+
+    body=`
+      <div class="title-row">WHOLESALE ORDER FORM &nbsp;&nbsp;&nbsp; <span style="font-size:10px">Honeycomb Blinds</span></div>
+      <div class="two-col">
+        <div>
+          <div class="field-row"><span class="field-label">FROM:</span><span class="field-val">${OUR_NAME}</span></div>
+          <div class="field-row"><span class="field-label">ADDRESS:</span><span class="field-val">${OUR_ADDR}</span></div>
+          <div class="field-row"><span class="field-label">PH:</span><span class="field-val">${OUR_PHONE}</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#555">email: orders@mccraes.co.nz</div>
+          <div class="field-row" style="justify-content:flex-end"><span class="field-label">ORDER NUMBER:</span><span class="field-val" style="min-width:120px">${custName}</span></div>
+          <div class="field-row" style="justify-content:flex-end"><span class="field-label">DATE:</span><span class="field-val" style="min-width:100px">${orderDate}</span></div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ITEM NO / LOCATION</th><th>WIDTH (MM)</th><th>DROP (MM)</th><th>CONTROL TYPE</th>
+          <th>FABRIC TYPE</th><th>FABRIC COLOUR</th><th>RAIL COLOUR</th>
+          <th>COMPONENT COLOUR</th><th>CHAIN LENGTH</th><th>CONTROL SIDE</th><th>SIDE TRACKS</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+  }
+
+  // ── PLEATED ────────────────────────────────────────────────
+  else if(type==='pleated'){
+    if(!pdItems.length){showToast('No pleated doors/windows on this order');return;}
+    const rows=pdItems.map((p,i)=>`<tr>
+      <td class="loc">${p.location||i+1}</td>
+      <td>${p.height||''}</td>
+      <td>${p.track||''}</td>
+      <td>${p.sdbl!=='double'?'X':''}</td>
+      <td>${p.sdbl==='double'?'X':''}</td>
+      <td>${p.fit==='Internal'?'Internal':'Face Fit'}</td>
+      <td>${p.angleSize&&p.angleSize!=='none'&&(p.angleSize==='2030'||p.angleSize==='1225'||p.angleSize==='2020')?(angleLabels[p.angleSize]+' '+sideLabels[p.angleSides||'all4']):''}</td>
+      <td>${p.angleSize&&p.angleSize!=='none'&&p.angleSize==='2040'?(angleLabels[p.angleSize]+' '+sideLabels[p.angleSides||'all4']):''}</td>
+      <td>${p.trimColour||''}</td>
+    </tr>`).join('');
+    for(let i=pdItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    const pcs=pdItems.find(p=>p.powderCoat);
+
+    body=`
+      <div class="title-row">WHOLESALE ORDER FORM &nbsp;&nbsp;&nbsp; <span style="font-size:10px">Standard Pleated Doors and Windows</span></div>
+      <div class="two-col">
+        <div>
+          <div class="field-row"><span class="field-label">FROM:</span><span class="field-val">${OUR_NAME}</span></div>
+          <div class="field-row"><span class="field-label">ADDRESS:</span><span class="field-val">${OUR_ADDR}</span></div>
+          <div class="field-row"><span class="field-label">PH:</span><span class="field-val">${OUR_PHONE}</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#555">email: orders@mccraes.co.nz</div>
+          <div class="field-row" style="justify-content:flex-end"><span class="field-label">ORDER NUMBER:</span><span class="field-val" style="min-width:120px">${custName}</span></div>
+          <div class="field-row" style="justify-content:flex-end"><span class="field-label">DATE:</span><span class="field-val" style="min-width:100px">${orderDate}</span></div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">ITEM NO / LOCATION</th>
+            <th rowspan="2">HEIGHT (MM)<br><span style="font-weight:normal">Finished size</span></th>
+            <th rowspan="2">TRACK (MM)<br><span style="font-weight:normal">Finished size</span></th>
+            <th rowspan="2">SINGLE</th>
+            <th rowspan="2">DOUBLE</th>
+            <th rowspan="2">INTERNAL OR<br>FACE FIT</th>
+            <th rowspan="2">20x30 ANGLE</th>
+            <th rowspan="2">20x40 ANGLE</th>
+            <th rowspan="2">TRIM COLOUR<br><span style="font-weight:normal">Black or White</span></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:16px;">
+        <div class="field-row"><span class="field-label">Powder Coat Colour:</span><span class="field-val">${pcs?pcs.powderCoat:''}</span></div>
+        <div class="field-row"><span class="field-label">Name of Person Placing Order:</span><span class="field-val">Dylan</span></div>
+      </div>
+      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+  }
+
+  // ── ROLLAWAY ───────────────────────────────────────────────
+  else if(type==='rollaway'){
+    if(!rollItems.length){showToast('No rollaway screens on this order');return;}
+    const rows=rollItems.map((r,i)=>`<tr>
+      <td class="loc">${r.location||''}</td>
+      <td>${r.cassette||''}</td>
+      <td>${r.track||''}</td>
+      <td>${r.topFix==='NA'?'':r.topFix||''}</td>
+      <td>${r.cord==='Black'?'B':r.cord==='White'?'W':''}</td>
+      <td>${r.foot==='Small'?'Y':''}</td>
+      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2020'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
+      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2030'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
+      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2040'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
+      <td>${r.colour||''}</td>
+    </tr>`).join('');
+    for(let i=rollItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    const pcs=rollItems.find(r=>r.powderCoat||r.customColourName);
+
+    body=`
+      <div class="title-row">McCRAES ROLLAWAY WINDOW ORDER SHEET</div>
+      <div class="two-col">
+        <div>
+          <div class="field-row"><span class="field-label">ORDER NO:</span><span class="field-val">${custName}</span></div>
+          <div class="field-row"><span class="field-label">DATE:</span><span class="field-val">${orderDate}</span></div>
+          <div class="field-row"><span class="field-label">TEL:</span><span class="field-val">${OUR_PHONE}</span></div>
+        </div>
+        <div>
+          <div class="field-row"><span class="field-label">NAME:</span><span class="field-val">${OUR_NAME}</span></div>
+          <div style="font-size:9px;color:#555;margin-top:4px">email: orders@mccraes.co.nz</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>LOCATION</th><th>CASSETTE (MM)<br><span style="font-weight:normal">Finished size</span></th>
+          <th>TRACK (MM)<br><span style="font-weight:normal">Finished size</span></th>
+          <th>TOP FIX L/R</th><th>CORD W/B</th><th>SMALL FOOT</th>
+          <th>20x20 ANGLE</th><th>20x30 ANGLE</th><th>20x40 ANGLE</th><th>TRIM COLOUR</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:8px">
+        <div class="field-row"><span class="field-label">Powder Coat Colour:</span><span class="field-val">${pcs?(pcs.powderCoat||pcs.customColourName||''):''}</span></div>
+      </div>
+      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+  }
+
+  if(body){
+    autosave();
+    printPage(body, 'order');
+  }
 }
 
 function autosave(){
