@@ -336,9 +336,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="no-print">
       <button class="btn btn-s" onclick="newQuote()" style="border-color:var(--danger);color:var(--danger)">🗑 Start New Quote</button>
-      <button class="btn btn-p" onclick="printOrderSheet('honeycomb')">Print Honeycomb Order</button>
-      <button class="btn btn-b" onclick="printOrderSheet('pleated')">Print Pleated Door Order</button>
-      <button class="btn" style="background:#1A5C7A;color:white" onclick="printOrderSheet('rollaway')">Print Rollaway Order</button>
+      <button class="btn btn-p" onclick="downloadOrder('honeycomb')">⬇ Download Honeycomb Order (.xlsx)</button>
+      <button class="btn btn-b" onclick="downloadOrder('pleated')">⬇ Download Pleated Door Order (.xlsx)</button>
+      <button class="btn" style="background:#1A5C7A;color:white" onclick="downloadOrder('rollaway')">⬇ Download Rollaway Order (.xlsx)</button>
     </div>
   </div>
 
@@ -1741,179 +1741,333 @@ function printOrderSheet(type){
   const pdItems=items.filter(i=>i.type==='pleated');
   const rollItems=items.filter(i=>i.type==='rollaway');
 
-  const angleLabels={'1225':'12x25','2020':'20x20','2030':'20x30','2040':'20x40','2050':'20x50','2570':'25x70','uchannel':'U Channel','custom':'Custom','none':''};
+  const angleLabels={'1225':'12x25','2020':'20x20','2030':'20x30','2040':'20x40','2050':'20x50','2570':'25x70','uchannel':'U Channel','custom':'Custom'};
   const sideLabels={'all4':'all sides','3sides_top_bottom_left':'T+B+L','3sides_top_bottom_right':'T+B+R','top_bottom':'T+B','left_right':'L+R','top_only':'Top','bottom_only':'Bottom','left_only':'Left','right_only':'Right'};
 
-  const baseCSS=`
-    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;font-size:10px;}
-    body{padding:12px;background:white;color:#000;}
-    .header-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
-    .title-row{font-size:13px;font-weight:bold;border:1px solid #000;padding:4px 6px;margin-bottom:6px;text-align:left;}
-    .field-row{display:flex;gap:4px;margin-bottom:4px;align-items:center;}
-    .field-label{font-weight:bold;white-space:nowrap;}
-    .field-val{border-bottom:1px solid #000;flex:1;padding:1px 4px;min-width:80px;}
-    table{width:100%;border-collapse:collapse;margin-top:8px;}
-    th{background:#d0d0d0;border:1px solid #000;padding:3px 4px;text-align:center;font-weight:bold;font-size:9px;}
-    td{border:1px solid #000;padding:3px 4px;text-align:center;min-height:16px;font-size:9px;}
-    td.loc{text-align:left;}
-    .notes-box{border:1px solid #000;padding:6px;margin-top:8px;min-height:40px;font-size:9px;}
-    .notes-label{font-weight:bold;margin-bottom:4px;}
-    .back-btn{display:block;width:160px;margin:16px auto 0;padding:10px;background:#2C5F4A;color:white;border:none;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center;}
-    @media print{.back-btn{display:none!important;} body{padding:6px;}}
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-    .email-right{text-align:right;font-size:9px;color:#333;}
+  const css=`
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;font-size:9px;padding:10px;background:white;color:#000;}
+    table{border-collapse:collapse;width:100%;}
+    td,th{border:1px solid #000;padding:2px 4px;vertical-align:middle;}
+    .no-border td,.no-border th{border:none;}
+    .bold{font-weight:bold;}
+    .red{color:red;font-weight:bold;font-size:13px;}
+    .big-title{font-size:13px;font-weight:bold;}
+    .right{text-align:right;}
+    .center{text-align:center;}
+    .header-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
+    .header-table td{border:none;padding:2px 4px;vertical-align:top;}
+    .from-box{border:1px solid #000;}
+    .order-box{border:1px solid #000;text-align:center;}
+    .data-row td{height:18px;}
+    .diagrams td{height:14px;}
+    .back-btn{display:block;width:160px;margin:16px auto 0;padding:10px;background:#2C5F4A;color:white;border:none;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;}
+    @media print{.back-btn{display:none!important;} body{padding:4px;}}
   `;
 
   let body='';
 
-  // ── HONEYCOMB ──────────────────────────────────────────────
+  // ── HONEYCOMB ─────────────────────────────────────────────
   if(type==='honeycomb'){
     if(!hbItems.length){showToast('No honeycomb blinds on this order');return;}
-    let rows=hbItems.map((b,i)=>`<tr>
-      <td>${i+1}${b.location?'<br><span style="font-size:8px">'+b.location+'</span>':''}</td>
-      <td>${b.width||''}</td>
-      <td>${b.drop||''}</td>
-      <td>${b.controlType||''} Drive</td>
-      <td>${b.fabricType?b.fabricType.replace('_',' '):''}</td>
-      <td>${b.fabricColour||''}</td>
-      <td>${b.railColour||''}</td>
-      <td>${b.controlType==='Chain'?(b.componentColour||''):'Clear'}</td>
-      <td>${b.controlType==='Chain'?(b.chainLength||''):''}</td>
-      <td>${b.controlSide||''}</td>
-      <td>${b.sideTracks||'No'}${b.sideTracks==='Yes'&&b.sideTrackDrop?' ('+b.sideTrackDrop+'mm)':''}</td>
-    </tr>`).join('');
-    // Empty rows to fill to 10
-    for(let i=hbItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-
+    let dataRows='';
+    for(let i=0;i<10;i++){
+      const b=hbItems[i]||null;
+      let st=b?b.sideTracks:'';
+      if(b&&b.sideTracks==='Yes'&&b.sideTrackDrop)st+=' ('+b.sideTrackDrop+'mm)';
+      dataRows+=`<tr class="data-row">
+        <td class="center">${b?(i+1+(b.location?'<br>'+b.location:'')):(i+1)}</td>
+        <td class="center">${b?b.width:''}</td>
+        <td class="center">${b?b.drop:''}</td>
+        <td class="center">${b?(b.controlType+' Drive'):''}</td>
+        <td class="center">${b?(b.fabricType?b.fabricType.replace('_',' '):''):''}</td>
+        <td class="center">${b?b.fabricColour:''}</td>
+        <td class="center">${b?b.railColour:''}</td>
+        <td class="center">${b?(b.controlType==='Chain'?(b.componentColour||''):'Clear'):''}</td>
+        <td class="center">${b?(b.controlType==='Chain'?(b.chainLength||''):''):''}</td>
+        <td class="center">${b?b.controlSide:''}</td>
+        <td class="center">${b?st:''}</td>
+      </tr>`;
+    }
     body=`
-      <div class="title-row">WHOLESALE ORDER FORM &nbsp;&nbsp;&nbsp; <span style="font-size:10px">Honeycomb Blinds</span></div>
-      <div class="two-col">
-        <div>
-          <div class="field-row"><span class="field-label">FROM:</span><span class="field-val">${OUR_NAME}</span></div>
-          <div class="field-row"><span class="field-label">ADDRESS:</span><span class="field-val">${OUR_ADDR}</span></div>
-          <div class="field-row"><span class="field-label">PH:</span><span class="field-val">${OUR_PHONE}</span></div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:9px;color:#555">email: orders@mccraes.co.nz</div>
-          <div class="field-row" style="justify-content:flex-end"><span class="field-label">ORDER NUMBER:</span><span class="field-val" style="min-width:120px">${custName}</span></div>
-          <div class="field-row" style="justify-content:flex-end"><span class="field-label">DATE:</span><span class="field-val" style="min-width:100px">${orderDate}</span></div>
-        </div>
-      </div>
-      <table>
-        <thead><tr>
-          <th>ITEM NO / LOCATION</th><th>WIDTH (MM)</th><th>DROP (MM)</th><th>CONTROL TYPE</th>
-          <th>FABRIC TYPE</th><th>FABRIC COLOUR</th><th>RAIL COLOUR</th>
-          <th>COMPONENT COLOUR</th><th>CHAIN LENGTH</th><th>CONTROL SIDE</th><th>SIDE TRACKS</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+    <table class="header-table">
+      <tr>
+        <td style="width:35%">
+          <div class="big-title">WHOLESALE ORDER FORM</div>
+          <br>
+          <div class="bold">TO McCraes Blinds &amp; Screens</div>
+          <div class="bold">12 Tokomaru Place</div>
+          <div class="bold">Nelson</div>
+          <div>PH: 03 543 8087</div>
+        </td>
+        <td style="width:30%" class="from-box">
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td class="bold" style="width:90px;border:none;border-bottom:1px solid #000;padding:2px 4px">FROM:</td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px">${OUR_NAME}</td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td class="bold" style="border:none;border-bottom:1px solid #000;padding:2px 4px">ADDRESS:</td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px">${OUR_ADDR}</td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td class="bold" style="border:none;padding:2px 4px">PH:</td><td style="border:none;padding:2px 4px">${OUR_PHONE}</td></tr>
+          </table>
+        </td>
+        <td style="width:35%;vertical-align:top;padding-left:8px">
+          <div class="right" style="font-size:9px;margin-bottom:6px">email: orders@mccraes.co.nz</div>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px">
+            <tr><td class="order-box bold" style="padding:3px 6px">ORDER NUMBER</td><td style="border:1px solid #000;padding:3px 6px">${custName}</td></tr>
+            <tr><td style="height:6px;border:none"></td><td style="border:none"></td></tr>
+            <tr><td class="order-box bold" style="padding:3px 6px">DATE:</td><td style="border:1px solid #000;padding:3px 6px">${orderDate}</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <div class="red" style="margin:6px 0">Honeycomb Blinds</div>
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:8%">ITEM NO:<br>OR LOCATION</th>
+          <th class="center" style="width:8%">WIDTH IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:8%">DROP IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:10%">CONTROL TYPE</th>
+          <th class="center" style="width:10%">FABRIC TYPE</th>
+          <th class="center" style="width:10%">FABRIC COLOUR</th>
+          <th class="center" style="width:8%">RAIL COLOUR</th>
+          <th class="center" style="width:10%">COMPONENT COLOUR</th>
+          <th class="center" style="width:10%">CHAIN LENGTH (MM)</th>
+          <th class="center" style="width:9%">CONTROL SIDE</th>
+          <th class="center" style="width:9%">SIDE TRACKS</th>
+        </tr>
+      </thead>
+      <tbody>${dataRows}</tbody>
+    </table>
+    <table style="margin-top:0;border-top:none">
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000;font-size:9px">Diagrams</td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+      <tr><td colspan="6" style="border:1px solid #000;padding:3px">Notes: ${notes}</td><td colspan="5" style="border:1px solid #000"></td></tr>
+    </table>`;
   }
 
-  // ── PLEATED ────────────────────────────────────────────────
+  // ── PLEATED ───────────────────────────────────────────────
   else if(type==='pleated'){
     if(!pdItems.length){showToast('No pleated doors/windows on this order');return;}
-    let rows=pdItems.map((p,i)=>`<tr>
-      <td class="loc">${p.location||i+1}</td>
-      <td>${p.height||''}</td>
-      <td>${p.track||''}</td>
-      <td>${p.sdbl!=='double'?'X':''}</td>
-      <td>${p.sdbl==='double'?'X':''}</td>
-      <td>${p.fit==='Internal'?'Internal':'Face Fit'}</td>
-      <td>${p.angleSize&&p.angleSize!=='none'&&(p.angleSize==='2030'||p.angleSize==='1225'||p.angleSize==='2020')?(angleLabels[p.angleSize]+' '+sideLabels[p.angleSides||'all4']):''}</td>
-      <td>${p.angleSize&&p.angleSize!=='none'&&p.angleSize==='2040'?(angleLabels[p.angleSize]+' '+sideLabels[p.angleSides||'all4']):''}</td>
-      <td>${p.trimColour||''}</td>
-    </tr>`).join('');
-    for(let i=pdItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    let dataRows='';
+    for(let i=0;i<10;i++){
+      const p=pdItems[i]||null;
+      const asize=p?(p.angleSize||'none'):'none';
+      const aside=p?(sideLabels[p.angleSides||'all4']||''):'';
+      const angle2030=p&&asize!=='none'&&(asize==='2030'||asize==='1225'||asize==='2020'||asize==='2050'||asize==='2570'||asize==='uchannel'||asize==='custom')?(angleLabels[asize]+' '+aside):'';
+      const angle2040=p&&asize==='2040'?(angleLabels[asize]+' '+aside):'';
+      dataRows+=`<tr class="data-row">
+        <td class="center">${p?(i+1+(p.location?'<br>'+p.location:'')):(i+1)}</td>
+        <td class="center">${p?p.height:''}</td>
+        <td class="center">${p?p.track:''}</td>
+        <td class="center">${p&&p.sdbl!=='double'?'X':''}</td>
+        <td class="center">${p&&p.sdbl==='double'?'X':''}</td>
+        <td class="center">${p?(p.fit==='Internal'?'Internal':'Face Fit'):''}</td>
+        <td class="center">${angle2030}</td>
+        <td class="center">${angle2040}</td>
+        <td class="center">${p?p.trimColour:''}</td>
+      </tr>`;
+    }
     const pcs=pdItems.find(p=>p.powderCoat);
-
     body=`
-      <div class="title-row">WHOLESALE ORDER FORM &nbsp;&nbsp;&nbsp; <span style="font-size:10px">Standard Pleated Doors and Windows</span></div>
-      <div class="two-col">
-        <div>
-          <div class="field-row"><span class="field-label">FROM:</span><span class="field-val">${OUR_NAME}</span></div>
-          <div class="field-row"><span class="field-label">ADDRESS:</span><span class="field-val">${OUR_ADDR}</span></div>
-          <div class="field-row"><span class="field-label">PH:</span><span class="field-val">${OUR_PHONE}</span></div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:9px;color:#555">email: orders@mccraes.co.nz</div>
-          <div class="field-row" style="justify-content:flex-end"><span class="field-label">ORDER NUMBER:</span><span class="field-val" style="min-width:120px">${custName}</span></div>
-          <div class="field-row" style="justify-content:flex-end"><span class="field-label">DATE:</span><span class="field-val" style="min-width:100px">${orderDate}</span></div>
-        </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th rowspan="2">ITEM NO / LOCATION</th>
-            <th rowspan="2">HEIGHT (MM)<br><span style="font-weight:normal">Finished size</span></th>
-            <th rowspan="2">TRACK (MM)<br><span style="font-weight:normal">Finished size</span></th>
-            <th rowspan="2">SINGLE</th>
-            <th rowspan="2">DOUBLE</th>
-            <th rowspan="2">INTERNAL OR<br>FACE FIT</th>
-            <th rowspan="2">20x30 ANGLE</th>
-            <th rowspan="2">20x40 ANGLE</th>
-            <th rowspan="2">TRIM COLOUR<br><span style="font-weight:normal">Black or White</span></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="margin-top:8px;display:flex;gap:16px;">
-        <div class="field-row"><span class="field-label">Powder Coat Colour:</span><span class="field-val">${pcs?pcs.powderCoat:''}</span></div>
-        <div class="field-row"><span class="field-label">Name of Person Placing Order:</span><span class="field-val">Dylan</span></div>
-      </div>
-      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+    <table class="header-table">
+      <tr>
+        <td style="width:35%">
+          <div class="big-title">WHOLESALE ORDER FORM</div>
+          <br>
+          <div class="bold">TO McCraes Blinds &amp; Screens</div>
+          <div class="bold">12 Tokomaru Place</div>
+          <div class="bold">Nelson</div>
+          <div>PH: 03 543 8087</div>
+        </td>
+        <td style="width:30%" class="from-box">
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td class="bold" style="width:90px;border:none;border-bottom:1px solid #000;padding:2px 4px">FROM:</td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px">${OUR_NAME}</td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td class="bold" style="border:none;border-bottom:1px solid #000;padding:2px 4px">ADDRESS:</td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px">${OUR_ADDR}</td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td><td style="border:none;border-bottom:1px solid #000;padding:2px 4px"></td></tr>
+            <tr><td class="bold" style="border:none;padding:2px 4px">PH:</td><td style="border:none;padding:2px 4px">${OUR_PHONE}</td></tr>
+          </table>
+        </td>
+        <td style="width:35%;vertical-align:top;padding-left:8px">
+          <div class="right" style="font-size:9px;margin-bottom:6px">email: orders@mccraes.co.nz</div>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px">
+            <tr><td style="border:1px solid #000;padding:3px 6px">ORDER NUMBER</td><td style="border:1px solid #000;padding:3px 6px">${custName}</td></tr>
+            <tr><td style="height:6px;border:none"></td><td style="border:none"></td></tr>
+            <tr><td class="bold" style="border:1px solid #000;padding:3px 6px">DATE:</td><td style="border:1px solid #000;padding:3px 6px">${orderDate}</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <div class="red" style="margin:6px 0">STANDARD PLEATED DOORS AND WINDOWS</div>
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:12%">ITEM NO:<br>OR LOCATION</th>
+          <th class="center" style="width:10%">HEIGHT IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:10%">TRACK IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:8%">SINGLE</th>
+          <th class="center" style="width:8%">DOUBLE</th>
+          <th class="center" style="width:12%">INTERNAL OR<br>FACE FIT</th>
+          <th class="center" style="width:14%">20 x 30 ANGLE</th>
+          <th class="center" style="width:14%">20 X 40 ANGLE</th>
+          <th class="center" style="width:12%">TRIM COLOUR<br><span style="font-weight:normal">Black or White</span></th>
+        </tr>
+      </thead>
+      <tbody>${dataRows}</tbody>
+    </table>
+    <table style="margin-top:0">
+      <tr class="diagrams"><td colspan="9" style="border:1px solid #000;font-size:9px">Diagrams</td></tr>
+      <tr class="diagrams"><td colspan="9" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="9" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="9" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="9" style="border:1px solid #000"></td></tr>
+    </table>
+    <table style="margin-top:4px">
+      <tr><td style="border:1px solid #000;padding:3px" colspan="3">Powder Coat Colour</td><td style="border:1px solid #000;padding:3px" colspan="6">${pcs?pcs.powderCoat:''}</td></tr>
+      <tr><td style="border:1px solid #000;padding:3px" colspan="3">Name of Person Placing the Order</td><td style="border:1px solid #000;padding:3px" colspan="6">Dylan</td></tr>
+    </table>
+    <div style="margin-top:6px;font-size:8px">
+      <div><strong>NOTES</strong> &nbsp;&nbsp; For inside fit we recommend you deduct a minimum of 2mm from Wood to Wood sizes for Height &amp; Track finished size</div>
+      <div style="margin-left:48px">For Face Fit, we recommend you use outside measurements less 3mm for the height &amp; 2mm for the track width when you use angles.</div>
+      <div style="margin-left:48px">Remember the closing style support angle goes outwards, so only measure to the inside face of the reveal this end, depending on your application</div>
+      <div style="margin-left:48px">For Face Fit Double Doors, use angle all the way around, but turn all angles inwards. Deduct 3mm from height and 3mm from the track measurements</div>
+    </div>`;
   }
 
-  // ── ROLLAWAY ───────────────────────────────────────────────
+  // ── ROLLAWAY ──────────────────────────────────────────────
   else if(type==='rollaway'){
     if(!rollItems.length){showToast('No rollaway screens on this order');return;}
-    let rows=rollItems.map((r,i)=>`<tr>
-      <td class="loc">${r.location||''}</td>
-      <td>${r.cassette||''}</td>
-      <td>${r.track||''}</td>
-      <td>${r.topFix==='NA'?'':r.topFix||''}</td>
-      <td>${r.cord==='Black'?'B':r.cord==='White'?'W':''}</td>
-      <td>${r.foot==='Small'?'Y':''}</td>
-      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2020'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
-      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2030'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
-      <td>${r.angleSize&&r.angleSize!=='none'&&r.angleSize==='2040'?(angleLabels[r.angleSize]+' '+sideLabels[r.angleSides||'all4']):''}</td>
-      <td>${r.colour||''}</td>
-    </tr>`).join('');
-    for(let i=rollItems.length;i<10;i++) rows+='<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    let dataRows='';
+    for(let i=0;i<15;i++){
+      const r=rollItems[i]||null;
+      const asize=r?(r.angleSize||'none'):'none';
+      const aside=r?(sideLabels[r.angleSides||'all4']||''):'';
+      const a2020=r&&asize==='2020'?(angleLabels[asize]+' '+aside):'';
+      const a2030=r&&asize==='2030'?(angleLabels[asize]+' '+aside):'';
+      const a2040=r&&asize==='2040'?(angleLabels[asize]+' '+aside):'';
+      dataRows+=`<tr class="data-row">
+        <td class="center">${r?(i+1):i+1}</td>
+        <td class="center">${r?r.location:''}</td>
+        <td class="center">${r?r.cassette:''}</td>
+        <td class="center">${r?r.track:''}</td>
+        <td class="center">${r?(r.topFix==='NA'?'':r.topFix||''):''}</td>
+        <td class="center">${r?(r.cord==='Black'?'B':r.cord==='White'?'W':''):''}</td>
+        <td class="center">${r&&r.foot==='Small'?'Y':''}</td>
+        <td class="center">${a2020}</td>
+        <td class="center">${a2030}</td>
+        <td class="center">${a2040}</td>
+        <td class="center">${r?r.colour:''}</td>
+      </tr>`;
+    }
     const pcs=rollItems.find(r=>r.powderCoat||r.customColourName);
-
     body=`
-      <div class="title-row">McCRAES ROLLAWAY WINDOW ORDER SHEET</div>
-      <div class="two-col">
-        <div>
-          <div class="field-row"><span class="field-label">ORDER NO:</span><span class="field-val">${custName}</span></div>
-          <div class="field-row"><span class="field-label">DATE:</span><span class="field-val">${orderDate}</span></div>
-          <div class="field-row"><span class="field-label">TEL:</span><span class="field-val">${OUR_PHONE}</span></div>
-        </div>
-        <div>
-          <div class="field-row"><span class="field-label">NAME:</span><span class="field-val">${OUR_NAME}</span></div>
-          <div style="font-size:9px;color:#555;margin-top:4px">email: orders@mccraes.co.nz</div>
-        </div>
-      </div>
-      <table>
-        <thead><tr>
-          <th>LOCATION</th><th>CASSETTE (MM)<br><span style="font-weight:normal">Finished size</span></th>
-          <th>TRACK (MM)<br><span style="font-weight:normal">Finished size</span></th>
-          <th>TOP FIX L/R</th><th>CORD W/B</th><th>SMALL FOOT</th>
-          <th>20x20 ANGLE</th><th>20x30 ANGLE</th><th>20x40 ANGLE</th><th>TRIM COLOUR</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="margin-top:8px">
-        <div class="field-row"><span class="field-label">Powder Coat Colour:</span><span class="field-val">${pcs?(pcs.powderCoat||pcs.customColourName||''):''}</span></div>
-      </div>
-      ${notes?'<div class="notes-box"><div class="notes-label">NOTES</div>'+notes+'</div>':''}`;
+    <div class="red center" style="font-size:15px;text-align:center;padding:6px;border:1px solid #000;margin-bottom:4px">MCCRAES ROLLAWAY WINDOW ORDER SHEET</div>
+    <div class="right" style="font-size:9px;color:red;margin-bottom:4px">email:orders@mccraes.co.nz</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+      <tr>
+        <td style="width:20%;border:1px solid #000;padding:4px"><strong>ORDER NO:</strong></td>
+        <td style="width:25%;border:1px solid #000;padding:4px">${custName}</td>
+        <td style="width:10%;border:none"></td>
+        <td style="width:15%;border:1px solid #000;padding:4px"><strong>NAME</strong></td>
+        <td style="width:30%;border:1px solid #000;padding:4px">${OUR_NAME}</td>
+      </tr>
+      <tr><td colspan="5" style="border:none;height:4px"></td></tr>
+      <tr>
+        <td style="border:1px solid #000;padding:4px"><strong>DATE:</strong></td>
+        <td style="border:1px solid #000;padding:4px">${orderDate}</td>
+        <td style="border:none"></td>
+        <td colspan="2" style="border:none"></td>
+      </tr>
+      <tr><td colspan="5" style="border:none;height:4px"></td></tr>
+      <tr>
+        <td colspan="3" style="border:none"></td>
+        <td style="border:1px solid #000;padding:4px">TEL:</td>
+        <td style="border:1px solid #000;padding:4px">${OUR_PHONE}</td>
+      </tr>
+    </table>
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:5%">ITEM NO:</th>
+          <th class="center" style="width:10%">LOCATION</th>
+          <th class="center" style="width:10%">CASSETTE IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:10%">TRACK IN MM<br><span style="font-weight:normal">Finished size</span></th>
+          <th class="center" style="width:7%">TOP FIX L/R</th>
+          <th class="center" style="width:6%">CORD W/B</th>
+          <th class="center" style="width:7%">SMALL FOOT</th>
+          <th class="center" style="width:11%">20 X 20 ANGLE</th>
+          <th class="center" style="width:11%">20 X 30 ANGLE</th>
+          <th class="center" style="width:11%">20 X 40 ANGLE</th>
+          <th class="center" style="width:12%">TRIM COLOUR<br><span style="font-weight:normal">Black or White</span></th>
+        </tr>
+      </thead>
+      <tbody>${dataRows}</tbody>
+    </table>
+    <table style="margin-top:0">
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000;font-size:9px">Diagrams</td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+      <tr class="diagrams"><td colspan="11" style="border:1px solid #000"></td></tr>
+    </table>
+    <table style="margin-top:4px">
+      <tr><td style="border:1px solid #000;padding:3px" colspan="4">Powder Coat Colour</td><td style="border:1px solid #000;padding:3px" colspan="7">${pcs?(pcs.powderCoat||pcs.customColourName||''):''}</td></tr>
+      <tr><td style="border:1px solid #000;padding:3px" colspan="4">Name of Person Placing the Order</td><td style="border:1px solid #000;padding:3px" colspan="7">Dylan</td></tr>
+    </table>`;
   }
 
   if(body){
     autosave();
-    printPage(body, 'order');
+    printPage(body,'order');
   }
+}
+
+
+function downloadOrder(type){
+  const hbItems=items.filter(i=>i.type==='honeycomb');
+  const pdItems=items.filter(i=>i.type==='pleated');
+  const rollItems=items.filter(i=>i.type==='rollaway');
+
+  const typeMap={'honeycomb':hbItems,'pleated':pdItems,'rollaway':rollItems};
+  const typeItems=typeMap[type];
+  if(!typeItems||!typeItems.length){showToast('No '+type+' items on this order');return;}
+
+  const custName=document.getElementById('custName').value||'Order';
+  const orderDate=document.getElementById('orderDate').value||new Date().toLocaleDateString('en-NZ');
+  const notes=document.getElementById('orderNotes').value||'';
+
+  showToast('Generating order form...');
+
+  fetch('https://order-api-ohev.onrender.com/order/'+type, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      custName, orderDate, notes,
+      items:typeItems
+    })
+  })
+  .then(res=>{
+    if(!res.ok)throw new Error('Server error '+res.status);
+    return res.blob();
+  })
+  .then(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=custName+'_'+type+'_order.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('\u2713 Order downloaded!');
+  })
+  .catch(e=>{
+    console.error(e);
+    showToast('Download failed — check connection');
+  });
 }
 
 function autosave(){
