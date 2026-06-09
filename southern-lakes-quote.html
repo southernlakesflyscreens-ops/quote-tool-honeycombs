@@ -2391,22 +2391,22 @@ function refreshJobs(){
     return `<div style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
       <div style="padding:14px 16px;background:var(--cream);display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-weight:600;font-size:.95rem">\${j.custName} \${urgency}</div>
-          <div style="font-size:.75rem;color:var(--soft);margin-top:2px">\${j.orderNum||'No order #'} · \${j.date} · \${j.items.length} item\${j.items.length!==1?'s':''}\${photoCount?' · 📷'+photoCount:''}</div>
-          <div style="margin-top:6px"><span style="background:\${statusColor};color:white;font-size:.65rem;padding:2px 8px;border-radius:10px">\${j.status}</span></div>
+          <div style="font-weight:600;font-size:.95rem">${j.custName} ${urgency}</div>
+          <div style="font-size:.75rem;color:var(--soft);margin-top:2px">${j.orderNum||'No order #'} · ${j.date} · ${j.items.length} item${j.items.length!==1?'s':''}${photoCount?' · 📷'+photoCount:''}</div>
+          <div style="margin-top:6px"><span style="background:${statusColor};color:white;font-size:.65rem;padding:2px 8px;border-radius:10px">${j.status}</span></div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--accent)">\${fmt(totalGST)}</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--accent)">${fmt(totalGST)}</div>
           <div style="font-size:.7rem;color:var(--soft)">incl. GST</div>
         </div>
       </div>
       <div style="padding:12px 16px;background:white;display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="loadJob('\${j.id}')" style="padding:8px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer">Open</button>
-        <select onchange="updateJobStatus('\${j.id}',this.value)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;background:white">
-          \${buildStatusOptions(j.status)}
+        <button onclick="loadJob('${j.id}')" style="padding:8px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer">Open</button>
+        <select onchange="updateJobStatus('${j.id}',this.value)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;background:white">
+          ${buildStatusOptions(j.status)}
         </select>
  /select>
-        <button onclick="deleteJob('\${j.id}')" style="padding:8px 12px;background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer">Delete</button>
+        <button onclick="deleteJob('${j.id}')" style="padding:8px 12px;background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer">Delete</button>
       </div>
     </div>`;
   }).join('');
