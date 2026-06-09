@@ -161,6 +161,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </style>
 </head>
 <body>
+<!-- PIN LOCK -->
+<div id="pinLock" style="position:fixed;inset:0;background:#1C1C1E;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+  <div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:white">Southern Lakes</div>
+  <div style="font-size:.9rem;color:#aaa;margin-top:-14px">Shade &amp; Screens</div>
+  <div style="background:#2a2a2a;border-radius:16px;padding:30px 24px;width:300px;max-width:90vw">
+    <div style="color:#aaa;font-size:.8rem;text-align:center;margin-bottom:16px;letter-spacing:.1em;text-transform:uppercase">Enter PIN</div>
+    <div id="pinDisplay" style="font-size:2.5rem;letter-spacing:.5em;text-align:center;color:white;margin-bottom:20px;min-height:48px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <button onclick="pinKey(1)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">1</button>
+      <button onclick="pinKey(2)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">2</button>
+      <button onclick="pinKey(3)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">3</button>
+      <button onclick="pinKey(4)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">4</button>
+      <button onclick="pinKey(5)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">5</button>
+      <button onclick="pinKey(6)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">6</button>
+      <button onclick="pinKey(7)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">7</button>
+      <button onclick="pinKey(8)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">8</button>
+      <button onclick="pinKey(9)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">9</button>
+      <button style="visibility:hidden;padding:18px;background:#3a3a3a;border:none;border-radius:10px"></button>
+      <button onclick="pinKey(0)" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">0</button>
+      <button onclick="pinBack()" style="padding:18px;background:#3a3a3a;border:none;border-radius:10px;color:white;font-size:1.3rem;font-weight:600;cursor:pointer">⌫</button>
+    </div>
+    <div id="pinError" style="color:#C0392B;text-align:center;font-size:.85rem;margin-top:12px;min-height:20px"></div>
+  </div>
+</div>
+
 <header>
   <div><h1>Southern Lakes Shade & Screens</h1><span>Quote & Order Tool</span></div>
   <div id="saveStatus" class="status-badge badge-saved">Saved</div>
@@ -172,6 +197,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="tab" onclick="switchTab('order')">Order Forms</div>
     <div class="tab" onclick="switchTab('preview')">Quote Preview</div>
     <div class="tab" onclick="switchTab('cutting')">Cutting Sheet</div>
+    <div class="tab" onclick="switchTab('jobs')">📋 Jobs</div>
   </div>
 
   <!-- CUSTOMER TAB -->
@@ -258,11 +284,35 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
 
+    <div class="section">
+      <div class="sh">Freight & Installation</div>
+      <div class="sb">
+        <div class="r2">
+          <div class="field">
+            <label>Freight (excl. GST)</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:1rem;color:var(--mid)">$</span>
+              <input type="number" inputmode="decimal" id="quoteFreight" placeholder="0.00" onchange="updateSummary();autosave()" style="flex:1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Installation (excl. GST)</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:1rem;color:var(--mid)">$</span>
+              <input type="number" inputmode="decimal" id="quoteInstall" placeholder="0.00" onchange="updateSummary();autosave()" style="flex:1">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="summary-box">
       <h2>Quote Summary</h2>
       <div class="sl"><span>Subtotal (excl. GST)</span><span id="sumSub">$0.00</span></div>
       <div class="sl" id="discLine" style="display:none"><span id="discLabel">Additional Options</span><span id="sumDisc">-$0.00</span></div>
       <div class="sl"><span>After discount</span><span id="sumAfter">$0.00</span></div>
+      <div class="sl" id="sumFreightRow" style="display:none"><span>Freight</span><span id="sumFreight">$0.00</span></div>
+      <div class="sl" id="sumInstallRow" style="display:none"><span>Installation</span><span id="sumInstall">$0.00</span></div>
       <div class="sl"><span>GST (15%)</span><span id="sumGST">$0.00</span></div>
       <div class="sl grand"><span>Total <span class="gst">incl. GST</span></span><span id="sumTotal">$0.00</span></div>
 
@@ -328,13 +378,43 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="sh">Order Details</div>
       <div class="sb">
         <div class="r2">
-          <div class="field"><label>Order Number</label><input type="text" id="orderNum" placeholder="e.g. SL-001" onchange="autosave()"></div>
+          <div class="field"><label>Order Number</label><input type="text" id="orderNum" placeholder="e.g. SL-100" onchange="autosave()"></div>
           <div class="field"><label>Date</label><input type="text" id="orderDate" onchange="autosave()"></div>
         </div>
         <div class="field"><label>Notes to McCrae's</label><textarea id="orderNotes" rows="3" placeholder="Special requirements..." onchange="autosave()" style="resize:vertical"></textarea></div>
       </div>
     </div>
+
+    <div class="section">
+      <div class="sh">Freight (South Island)</div>
+      <div class="sb">
+        <div class="r2">
+          <div class="field">
+            <label>Freight Type</label>
+            <select id="freightType" onchange="calcFreight()">
+              <option value="none">No freight</option>
+              <option value="courier_a5">Courier — A5 Satchel</option>
+              <option value="courier_a4">Courier — A4 Satchel</option>
+              <option value="courier_a3">Courier — A3 Satchel</option>
+              <option value="transport">Transport (over 2m)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Rural Delivery?</label>
+            <select id="freightRural" onchange="calcFreight()">
+              <option value="no">No</option>
+              <option value="yes">Yes (+$7.68)</option>
+            </select>
+          </div>
+        </div>
+        <div id="freightResult" style="background:var(--alight);border:1.5px solid var(--accent);border-radius:8px;padding:12px 14px;display:none">
+          <div class="price-row"><span>Freight (wholesale excl. GST)</span><span id="freightWholesale">$0.00</span></div>
+          <div class="price-row total"><span>Freight (customer incl. markup)</span><span class="amt" id="freightRetail">$0.00</span></div>
+        </div>
+      </div>
+    </div>
     <div class="no-print">
+      <button class="btn btn-p" onclick="manualSaveJob()" style="margin-bottom:10px">💾 Save Job to History</button>
       <button class="btn btn-s" onclick="newQuote()" style="border-color:var(--danger);color:var(--danger)">🗑 Start New Quote</button>
       <button class="btn btn-p" onclick="downloadOrder('honeycomb')">⬇ Download Honeycomb Order (.xlsx)</button>
       <button class="btn btn-b" onclick="downloadOrder('pleated')">⬇ Download Pleated Door Order (.xlsx)</button>
@@ -352,7 +432,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
     </div>
     <div class="no-print">
-      <button class="btn btn-p" onclick="printCuttingSheet()">Print / Save as PDF</button>
+      <button class="btn btn-p" onclick="printCuttingSheet()">📄 Save Cutting Sheet as PDF</button>
+      <button class="btn btn-s" onclick="downloadCuttingSheet()">⬇ Download Cutting Sheet (.html)</button>
     </div>
   </div>
 
@@ -386,6 +467,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="qp-totals">
         <div class="qp-total-row"><span>Subtotal</span><span id="qpSub">$0.00</span></div>
         <div class="qp-total-row" id="qpDiscRow" style="display:none"><span id="qpDiscLabel">Additional Options</span><span id="qpDisc">-$0.00</span></div>
+        <div class="qp-total-row" id="qpFreightRow" style="display:none"><span>Freight</span><span id="qpFreightAmt">$0.00</span></div>
+        <div class="qp-total-row" id="qpInstallRow" style="display:none"><span>Installation</span><span id="qpInstallAmt">$0.00</span></div>
         <div class="qp-total-row"><span>GST (15%)</span><span id="qpGST">$0.00</span></div>
         <div class="qp-total-row grand"><span>Total (incl. GST)</span><span id="qpTotal">$0.00</span></div>
       </div>
@@ -398,6 +481,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="btn btn-p" onclick="printQuote()">Print / Save as PDF</button>
     </div>
   </div>
+  <!-- JOBS TAB -->
+  <div id="tab-jobs" class="tc">
+    <div class="section">
+      <div class="sh" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Job History</span>
+        <span id="jobCount" style="font-size:.75rem;font-weight:400;opacity:.7"></span>
+      </div>
+      <div class="sb" id="jobsList">
+        <p style="text-align:center;color:var(--soft);padding:20px">No saved jobs yet</p>
+      </div>
+    </div>
+  </div>
+
 </main>
 <div class="toast" id="toast"></div>
 
@@ -516,7 +612,7 @@ function lookupPleated(type,sdbl,height){
 // ── COLOURS ───────────────────────────────────────────────────
 const LUNA_COLS=['Bone','Charcoal','Cloud','Dusky Rose','Graphite','Mineral','Pumice','Sage','Taupe','Walnut'];
 const HALO_COLS=['Birch','Duck Egg','Frost','Iron','Ivory','Meteor','Mushroom','Praline','Soft Damson','Willow'];
-const RAIL_COLS=['Arctic White','Black','Bronco','Brown','Desert Sand','Off White','Silver Star'];
+const RAIL_COLS=['Appliance White','Arctic White','Black','Bronco','Brown','Desert Sand','Off White','Silver Star'];
 const CHAIN_LENS=[500,750,1000,1200,1500,1800,2000];
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -535,13 +631,21 @@ function addItem(type){
   const id=nextId++;
   let item={id,type};
   if(type==='honeycomb'){
-    Object.assign(item,{location:'',width:'',drop:'',fabricType:'Luna_Dimout',controlType:'Chain',fabricColour:'',railColour:'Arctic White',componentColour:'White',chainLength:'1000',controlSide:'Left',sideTracks:'No',sideTrackDrop:'',photos:[],notes:'',wholesale:null,retail:null});
+    Object.assign(item,{location:'',width:'',drop:'',fabricType:'Luna_Dimout',controlType:'Chain',
+    fabricColour:getLastColour('honeycomb','fabricColour')||'',
+    railColour:getLastColour('honeycomb','railColour')||'Appliance White',
+    componentColour:'White',chainLength:'1000',controlSide:'Left',sideTracks:'No',sideTrackDrop:'',photos:[],notes:'',wholesale:null,retail:null});
   } else if(type==='pleated'){
-    Object.assign(item,{location:'',itemType:'door',sdbl:'single',height:'',track:'',fit:'Internal',angleSize:'none',angleSides:'all4',customAnglePrice:'',trimColour:'White',powderCoat:'',photos:[],notes:'',wholesale:null,retail:null});
+    Object.assign(item,{location:'',itemType:'door',sdbl:'single',height:'',track:'',fit:'Internal',angleSize:'none',angleSides:'all4',customAnglePrice:'',
+    trimColour:'White',
+    powderCoat:getLastColour('pleated','powderCoat')||'',
+    photos:[],notes:'',wholesale:null,retail:null});
   } else if(type==='magnetic'){
-    Object.assign(item,{location:'',w1:'',w2:'',d1:'',d2:'',tlCorner:'flat',trCorner:'flat',blCorner:'raised',brCorner:'raised',colour:'White',angleSize:'none',angleSides:'all4',customAnglePrice:'',sellPrice:'',photos:[],notes:'',materialCost:null,retail:null});
+    Object.assign(item,{location:'',w1:'',w2:'',d1:'',d2:'',tlCorner:'flat',trCorner:'flat',blCorner:'raised',brCorner:'raised',
+    colour:getLastColour('magnetic','colour')||'White',colour:'White',angleSize:'none',angleSides:'all4',customAnglePrice:'',sellPrice:'',photos:[],notes:'',materialCost:null,retail:null});
   } else if(type==='rollaway'){
-    Object.assign(item,{location:'',cassette:'',track:'',topFix:'NA',cord:'',foot:'Normal',colour:'Arctic White',customColour:false,angleSize:'none',angleSides:'all4',customAnglePrice:'',angleNotes:'',photos:[],notes:'',wholesale:null,retail:null});
+    Object.assign(item,{location:'',cassette:'',track:'',topFix:'NA',cord:'',foot:'Normal',
+    colour:getLastColour('rollaway','colour')||'Arctic White',customColour:false,angleSize:'none',angleSides:'all4',customAnglePrice:'',angleNotes:'',photos:[],notes:'',wholesale:null,retail:null});
   }
   items.push(item);
   appendItemCard(item);
@@ -589,8 +693,8 @@ function honeycombCardHTML(b){
         </select></div>
       </div>
       <div class="r2">
-        <div class="field"><label>Width (mm)</label><input type="number" inputmode="numeric" value="${b.width}" placeholder="e.g. 1200" onchange="setF(${b.id},'width',this.value)"></div>
-        <div class="field"><label>Drop (mm)</label><input type="number" inputmode="numeric" value="${b.drop}" placeholder="e.g. 1500" onchange="setF(${b.id},'drop',this.value)"></div>
+        <div class="field"><label>Width (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${b.width}" placeholder="e.g. 1200" onchange="setF(${b.id},'width',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
+        <div class="field"><label>Drop (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${b.drop}" placeholder="e.g. 1500" onchange="setF(${b.id},'drop',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
       </div>
       <div class="r2">
         <div class="field"><label>Fabric Colour</label><select onchange="setF(${b.id},'fabricColour',this.value)">
@@ -652,8 +756,8 @@ function pleatedCardHTML(p){
         </select></div>
       </div>
       <div class="r2">
-        <div class="field"><label>Height (mm)</label><input type="number" inputmode="numeric" value="${p.height}" placeholder="e.g. 2100" onchange="setF(${p.id},'height',this.value)"></div>
-        <div class="field"><label>Track (mm)</label><input type="number" inputmode="numeric" value="${p.track}" placeholder="e.g. 900" onchange="setF(${p.id},'track',this.value)"></div>
+        <div class="field"><label>Height (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${p.height}" placeholder="e.g. 2100" onchange="setF(${p.id},'height',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:#2C3F7A;color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
+        <div class="field"><label>Track (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${p.track}" placeholder="e.g. 900" onchange="setF(${p.id},'track',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:#2C3F7A;color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
       </div>
       <div class="r2">
         <div class="field"><label>Fit</label><select onchange="setF(${p.id},'fit',this.value)">
@@ -828,12 +932,19 @@ function updateSummary(){
   const sub=items.reduce((s,i)=>s+(i.retail||0),0);
   const disc=sub*(discountPct/100);
   const after=sub-disc;
-  const gst=after*0.15;
-  const total=after+gst;
+  const freight=parseFloat(document.getElementById('quoteFreight')?.value)||0;
+  const install=parseFloat(document.getElementById('quoteInstall')?.value)||0;
+  const afterExtras=after+freight+install;
+  const gst=afterExtras*0.15;
+  const total=afterExtras+gst;
   document.getElementById('sumSub').textContent=fmt(sub);
   document.getElementById('sumAfter').textContent=fmt(after);
   document.getElementById('sumGST').textContent=fmt(gst);
   document.getElementById('sumTotal').textContent=fmt(total);
+  const fr=document.getElementById('sumFreightRow');
+  const ir=document.getElementById('sumInstallRow');
+  if(fr){fr.style.display=freight>0?'flex':'none';document.getElementById('sumFreight').textContent=fmt(freight);}
+  if(ir){ir.style.display=install>0?'flex':'none';document.getElementById('sumInstall').textContent=fmt(install);}
   const dl=document.getElementById('discLine');
   if(discountPct>0){dl.style.display='flex';document.getElementById('discLabel').textContent='Discount ('+discountPct+'%)';document.getElementById('sumDisc').textContent='-'+fmt(disc);}
   else dl.style.display='none';
@@ -991,9 +1102,18 @@ function refreshPreview(){
   const gst=after*0.15;
   const total=after+gst;
 
+  const qpFreight=parseFloat(document.getElementById('quoteFreight')?.value)||0;
+  const qpInstall=parseFloat(document.getElementById('quoteInstall')?.value)||0;
+  const qpAfterExtras=after+qpFreight+qpInstall;
+  const qpGst=qpAfterExtras*0.15;
+  const qpTotal=qpAfterExtras+qpGst;
   document.getElementById('qpSub').textContent=fmt(sub);
-  document.getElementById('qpGST').textContent=fmt(gst);
-  document.getElementById('qpTotal').textContent=fmt(total);
+  document.getElementById('qpGST').textContent=fmt(qpGst);
+  document.getElementById('qpTotal').textContent=fmt(qpTotal);
+  const qpFRow=document.getElementById('qpFreightRow');
+  const qpIRow=document.getElementById('qpInstallRow');
+  if(qpFRow){qpFRow.style.display=qpFreight>0?'flex':'none';if(document.getElementById('qpFreightAmt'))document.getElementById('qpFreightAmt').textContent=fmt(qpFreight);}
+  if(qpIRow){qpIRow.style.display=qpInstall>0?'flex':'none';if(document.getElementById('qpInstallAmt'))document.getElementById('qpInstallAmt').textContent=fmt(qpInstall);}
 
   const qdr=document.getElementById('qpDiscRow');
   if(discountPct>0){
@@ -1040,12 +1160,13 @@ function setCustomDiscount(inp){
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab){
-  const tabs=['customer','quote','order','preview','cutting'];
+  const tabs=['customer','quote','order','preview','cutting','jobs'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   document.querySelectorAll('.tc').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   if(tab==='preview')refreshPreview();
   if(tab==='cutting')refreshCuttingSheet();
+  if(tab==='jobs')refreshJobs();
 }
 
 // ── EXPORT HONEYCOMB XLSX ─────────────────────────────────────
@@ -1578,8 +1699,8 @@ function rollawayCardHTML(r){
   <div class="item-card-body">
     <div class="field"><label>Room / Location</label><input type="text" value="${r.location}" placeholder="e.g. Bedroom Window" onchange="setF(${r.id},'location',this.value)"></div>
     <div class="r2">
-      <div class="field"><label>Cassette Width (mm)</label><input type="number" inputmode="numeric" value="${r.cassette}" placeholder="e.g. 1200" onchange="setF(${r.id},'cassette',this.value)"></div>
-      <div class="field"><label>Track Drop (mm)</label><input type="number" inputmode="numeric" value="${r.track}" placeholder="e.g. 1500" onchange="setF(${r.id},'track',this.value)"></div>
+      <div class="field"><label>Cassette Width (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${r.cassette}" placeholder="e.g. 1200" onchange="setF(${r.id},'cassette',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:#1A5C7A;color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
+      <div class="field"><label>Track Drop (mm)</label><div style="display:flex;gap:8px"><input type="number" inputmode="numeric" value="${r.track}" placeholder="e.g. 1500" onchange="setF(${r.id},'track',this.value)" style="flex:1"><button onclick="startVoice(this.previousElementSibling)" style="padding:10px 14px;background:#1A5C7A;color:white;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">🎤</button></div></div>
     </div>
     <div class="r2">
       <div class="field"><label>Top Fix</label><select onchange="setF(${r.id},'topFix',this.value)"><option value="NA" ${r.topFix==='NA'?'selected':''}>NA</option><option value="L" ${r.topFix==='L'?'selected':''}>Left</option><option value="R" ${r.topFix==='R'?'selected':''}>Right</option></select></div>
@@ -1625,9 +1746,7 @@ function rollawayCardHTML(r){
 
 
 function printPage(bodyContent, type){
-  // Save state before printing
   autosave();
-
   const printCSS=`
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Helvetica Neue',Arial,sans-serif;padding:24px;color:#1C1C1E;background:white;max-width:750px;margin:0 auto;}
@@ -1654,14 +1773,24 @@ function printPage(bodyContent, type){
     .qp-total-row{display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;color:#5A5A5A;}
     .qp-total-row.grand{font-size:1rem;font-weight:700;color:#1C1C1E;border-top:2px solid #1C1C1E;margin-top:5px;padding-top:7px;}
     .qp-footer{margin-top:20px;padding-top:14px;border-top:1px solid #E0D9CE;font-size:.72rem;color:#9A9A9A;text-align:center;}
-    .back-btn{display:block;width:180px;margin:24px auto 0;padding:13px;background:#2C5F4A;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;text-align:center;}
-    @media print{.back-btn{display:none!important;} body{padding:10px;}}
+    .btn-bar{display:flex;gap:10px;justify-content:center;margin:24px 0;padding:0 24px;}
+    .btn-print{flex:1;padding:16px;background:#2C5F4A;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}
+    .btn-back{flex:1;padding:16px;background:#888;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}
+    @media print{.btn-bar{display:none!important;} body{padding:10px;}}
   `;
 
-  // Replace page content
-  document.open();
-  document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + (type==='quote'?'Quote':'Cutting Sheet') + '</title><style>' + printCSS + '</style></head><body>' + bodyContent + '<button class="back-btn" onclick="window.location.reload()">← Back to App</button></body></html>');
-  document.close();
+  const blob = new Blob([
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' +
+    (type==='quote'?'Quote':'Document') +
+    '</title><style>' + printCSS + '</style></head><body>' +
+    '<div class="btn-bar"><button class="btn-print" onclick="window.print()">📄 Save as PDF</button><button class="btn-back" onclick="window.close()">← Back</button></div>' +
+    bodyContent +
+    '<div class="btn-bar"><button class="btn-print" onclick="window.print()">📄 Save as PDF</button><button class="btn-back" onclick="window.close()">← Back</button></div>' +
+    '</body></html>'
+  ], {type: 'text/html'});
+
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 
 
@@ -1697,6 +1826,43 @@ function printQuote(){
   printPage(content.innerHTML,'quote');
 }
 
+function downloadCuttingSheet(){
+  refreshCuttingSheet();
+  const content=document.getElementById('cuttingSheetContent');
+  if(!content||content.innerHTML.includes('No magnetic screens')){showToast('No magnetic screens!');return;}
+  const custName=document.getElementById('custName').value||'Order';
+  const date=document.getElementById('orderDate').value||new Date().toLocaleDateString('en-NZ');
+
+  const fullHTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cutting Sheet - '+custName+'</title><style>'+
+    '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}'+
+    'body{padding:20px;color:#000;background:white;max-width:800px;margin:0 auto;}'+
+    'h2{font-size:1.3rem;margin-bottom:4px;}'+
+    '.cs-item{border:1px solid #ccc;border-radius:8px;padding:14px;margin-bottom:14px;page-break-inside:avoid;}'+
+    '.cs-item-title{font-weight:700;font-size:1rem;margin-bottom:10px;color:#2C5F4A;}'+
+    '.cs-cell{border:1px solid #ddd;border-radius:5px;padding:8px;text-align:center;}'+
+    '.cs-label{font-size:.6rem;text-transform:uppercase;color:#5A5A5A;margin-bottom:3px;font-weight:700;display:block;}'+
+    '.cs-val{font-size:1.1rem;font-weight:700;}'+
+    '.cs-corners{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}'+
+    '.cs-corner{border:1px solid #ddd;border-radius:5px;padding:7px;text-align:center;font-size:.82rem;}'+
+    '.cs-clabel{font-size:.6rem;text-transform:uppercase;color:#5A5A5A;display:block;}'+
+    '.btn-print{display:block;width:200px;margin:20px auto;padding:14px;background:#2C5F4A;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;}'+
+    '@media print{.btn-print{display:none!important;}}'+
+    '</style></head><body>'+
+    '<button class="btn-print" onclick="window.print()">📄 Save as PDF</button>'+
+    '<div style="display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:20px">'+
+    '<div><h2>Magnetic Screen Cutting Sheet</h2><div style="color:#555;font-size:.85rem">Southern Lakes Shade &amp; Screens</div></div>'+
+    '<div style="text-align:right;font-size:.85rem"><strong>'+custName+'</strong><br>'+date+'</div></div>'+
+    content.innerHTML+
+    '<button class="btn-print" onclick="window.print()">📄 Save as PDF</button>'+
+    '</body></html>';
+
+  // Open in new tab - works reliably on iPad Safari
+  const blob=new Blob([fullHTML],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+}
+
+
 function printCuttingSheet(){
   refreshCuttingSheet();
   const content=document.getElementById('cuttingSheetContent');
@@ -1711,22 +1877,6 @@ function printCuttingSheet(){
     ${content.innerHTML}`;
   autosave();
   printPage(printContent,'cutting');
-}
-
-function newQuote(){
-  if(!confirm('Start a new quote? This will clear all current data.'))return;
-  localStorage.removeItem('slq3');
-  items=[];discountPct=0;nextId=1;
-  ['custName','custPhone','custEmail','custAddress','quoteNotes','orderNum','orderNotes'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
-  const ref=document.getElementById('referral');if(ref)ref.value='';
-  const refOther=document.getElementById('referralOther');if(refOther)refOther.value='';
-  document.getElementById('itemsList').innerHTML='';
-  document.getElementById('orderDate').value=new Date().toLocaleDateString('en-NZ');
-  updateSummary();
-  switchTab('customer');
-  showToast('New quote started!');
 }
 
 function printOrderSheet(type){
@@ -2081,6 +2231,8 @@ function autosave(){
       referral:document.getElementById('referral')?.value||'',
       referralOther:document.getElementById('referralOther')?.value||'',
       quoteNotes:document.getElementById('quoteNotes').value,
+      quoteFreight:document.getElementById('quoteFreight')?.value||'',
+      quoteInstall:document.getElementById('quoteInstall')?.value||'',
       orderNum:document.getElementById('orderNum')?.value||'',
       orderDate:document.getElementById('orderDate')?.value||'',
       orderNotes:document.getElementById('orderNotes')?.value||'',
@@ -2102,6 +2254,8 @@ function loadState(){
     document.getElementById('custEmail').value=s.custEmail||'';
     document.getElementById('custAddress').value=s.custAddress||'';
     document.getElementById('quoteNotes').value=s.quoteNotes||'';
+    if(document.getElementById('quoteFreight'))document.getElementById('quoteFreight').value=s.quoteFreight||'';
+    if(document.getElementById('quoteInstall'))document.getElementById('quoteInstall').value=s.quoteInstall||'';
     if(document.getElementById('orderNum'))document.getElementById('orderNum').value=s.orderNum||'';
     if(document.getElementById('orderDate')&&s.orderDate)document.getElementById('orderDate').value=s.orderDate;
     if(document.getElementById('orderNotes'))document.getElementById('orderNotes').value=s.orderNotes||'';
@@ -2126,11 +2280,305 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  if(document.getElementById('orderDate'))
-    document.getElementById('orderDate').value=new Date().toLocaleDateString('en-NZ');
-  loadState();
+// ── PIN LOCK ──────────────────────────────────────────────────
+var pinEntry = '';
+
+function pinKey(n){
+  try{
+    if(pinEntry.length < 4){
+      pinEntry = pinEntry + String(n);
+      document.getElementById('pinDisplay').textContent = '•'.repeat(pinEntry.length);
+    }
+    if(pinEntry.length === 4){
+      if(pinEntry === '2026'){
+        sessionStorage.setItem('pin_ok','1');
+        document.getElementById('pinLock').style.display='none';
+        initApp();
+      } else {
+        document.getElementById('pinError').textContent = 'Wrong PIN, try again';
+        pinEntry = '';
+        document.getElementById('pinDisplay').textContent = '';
+        setTimeout(function(){ document.getElementById('pinError').textContent=''; }, 1500);
+      }
+    }
+  }catch(e){
+    document.getElementById('pinError').textContent = 'Error: '+e.message;
+  }
+}
+
+function pinBack(){
+  pinEntry = pinEntry.slice(0,-1);
+  document.getElementById('pinDisplay').textContent = '•'.repeat(pinEntry.length);
+}
+
+// ── JOBS HISTORY ──────────────────────────────────────────────
+const JOB_STATUSES = ['Quote sent','Quote accepted','Deposit paid','Ordered from McCraes','Installed','Invoiced','Paid'];
+const STATUS_COLORS = {'Quote sent':'#888','Quote accepted':'#2C5F4A','Deposit paid':'#2C5F4A','Ordered from McCraes':'#B8922A','Installed':'#1A5C7A','Invoiced':'#7A1A5C','Paid':'#1C1C1E'};
+
+function saveCurrentJob(){
+  const custName=document.getElementById('custName').value||'Unknown Customer';
+  if(!custName||custName==='Unknown Customer'&&items.length===0)return;
+  const jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  const orderNum=document.getElementById('orderNum')?.value||'';
+  const existingIdx=jobs.findIndex(j=>j.orderNum===orderNum&&orderNum!=='');
+  const job={
+    id: existingIdx>=0?jobs[existingIdx].id:Date.now(),
+    orderNum, custName,
+    custPhone:document.getElementById('custPhone').value||'',
+    custEmail:document.getElementById('custEmail').value||'',
+    custAddress:document.getElementById('custAddress').value||'',
+    date:new Date().toLocaleDateString('en-NZ'),
+    items:JSON.parse(JSON.stringify(items)),
+    discountPct,
+    status:'Quote sent',
+    installDate:'',
+    installWeeks:'',
+    notes:document.getElementById('quoteNotes').value||'',
+    freight:{type:'none',rural:'no',wholesale:0,retail:0},
+    savedAt:Date.now()
+  };
+  if(existingIdx>=0){
+    job.status=jobs[existingIdx].status||'Quote sent';
+    job.installDate=jobs[existingIdx].installDate||'';
+    job.installWeeks=jobs[existingIdx].installWeeks||'';
+    job.freight=jobs[existingIdx].freight||{type:'none',rural:'no',wholesale:0,retail:0};
+    jobs[existingIdx]=job;
+  } else {
+    jobs.unshift(job);
+  }
+  // Keep max 200 jobs
+  if(jobs.length>200)jobs.splice(200);
+  localStorage.setItem('slq_jobs',JSON.stringify(jobs));
+  return job;
+}
+
+function buildStatusOptions(current){
+  var opts='';
+  var statuses=['Quote sent','Quote accepted','Deposit paid','Ordered from McCraes','Installed','Invoiced','Paid'];
+  for(var i=0;i<statuses.length;i++){
+    var s=statuses[i];
+    opts+='<option value="'+s+'"'+(current===s?' selected':'')+'>'+s+'</option>';
+  }
+  return opts;
+}
+
+function refreshJobs(){
+  const jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  const el=document.getElementById('jobsList');
+  const countEl=document.getElementById('jobCount');
+  if(countEl)countEl.textContent=jobs.length+' jobs';
+  if(!el)return;
+  if(!jobs.length){el.innerHTML='<p style="text-align:center;color:var(--soft);padding:20px">No saved jobs yet</p>';return;}
+
+  const now=Date.now();
+  el.innerHTML=jobs.map(j=>{
+    // Install urgency
+    let urgency='';
+    if(j.installWeeks&&j.status!=='Installed'&&j.status!=='Invoiced'&&j.status!=='Paid'){
+      const savedAt=j.savedAt||now;
+      const acceptedDate=j.acceptedAt||savedAt;
+      const weeksPassed=(now-acceptedDate)/(1000*60*60*24*7);
+      const totalWeeks=parseFloat(j.installWeeks)||4;
+      if(weeksPassed>=totalWeeks){urgency='<span style="background:#C0392B;color:white;font-size:.65rem;padding:2px 7px;border-radius:10px;margin-left:6px">OVERDUE</span>';}
+      else if(weeksPassed>=totalWeeks-1){urgency='<span style="background:#E67E22;color:white;font-size:.65rem;padding:2px 7px;border-radius:10px;margin-left:6px">THIS WEEK</span>';}
+    }
+    const statusColor=STATUS_COLORS[j.status]||'#888';
+    const total=j.items.reduce((s,i)=>s+(i.retail||0),0);
+    const disc=total*(j.discountPct||0)/100;
+    const afterDisc=total-disc;
+    const totalGST=afterDisc*1.15;
+    const photoCount=j.items.reduce((s,i)=>s+(i.photos||[]).length,0);
+    return `<div style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+      <div style="padding:14px 16px;background:var(--cream);display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:600;font-size:.95rem">\${j.custName} \${urgency}</div>
+          <div style="font-size:.75rem;color:var(--soft);margin-top:2px">\${j.orderNum||'No order #'} · \${j.date} · \${j.items.length} item\${j.items.length!==1?'s':''}\${photoCount?' · 📷'+photoCount:''}</div>
+          <div style="margin-top:6px"><span style="background:\${statusColor};color:white;font-size:.65rem;padding:2px 8px;border-radius:10px">\${j.status}</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--accent)">\${fmt(totalGST)}</div>
+          <div style="font-size:.7rem;color:var(--soft)">incl. GST</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;background:white;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="loadJob('\${j.id}')" style="padding:8px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer">Open</button>
+        <select onchange="updateJobStatus('\${j.id}',this.value)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;background:white">
+          \${buildStatusOptions(j.status)}
+        </select>
+ /select>
+        <button onclick="deleteJob('\${j.id}')" style="padding:8px 12px;background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadJob(id){
+  const jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  const job=jobs.find(j=>String(j.id)===String(id));
+  if(!job)return;
+  // Load job into current state
+  document.getElementById('custName').value=job.custName||'';
+  document.getElementById('custPhone').value=job.custPhone||'';
+  document.getElementById('custEmail').value=job.custEmail||'';
+  document.getElementById('custAddress').value=job.custAddress||'';
+  document.getElementById('quoteNotes').value=job.notes||'';
+  if(document.getElementById('orderNum'))document.getElementById('orderNum').value=job.orderNum||'';
+  items=JSON.parse(JSON.stringify(job.items||[]));
+  discountPct=job.discountPct||0;
+  nextId=Math.max(...items.map(i=>i.id||0),0)+1;
+  document.getElementById('itemsList').innerHTML='';
+  items.forEach(item=>appendItemCard(item));
+  items.forEach(item=>updatePriceDisplay(item));
   updateSummary();
+  autosave();
+  switchTab('customer');
+  showToast('Job loaded: '+job.custName);
+}
+
+function updateJobStatus(id,status){
+  const jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  const job=jobs.find(j=>String(j.id)===String(id));
+  if(!job)return;
+  job.status=status;
+  if(status==='Quote accepted'&&!job.acceptedAt)job.acceptedAt=Date.now();
+  localStorage.setItem('slq_jobs',JSON.stringify(jobs));
+  refreshJobs();
+}
+
+function deleteJob(id){
+  if(!confirm('Delete this job? This cannot be undone.'))return;
+  let jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  jobs=jobs.filter(j=>String(j.id)!==String(id));
+  localStorage.setItem('slq_jobs',JSON.stringify(jobs));
+  refreshJobs();
+}
+
+// ── AUTO QUOTE NUMBER ─────────────────────────────────────────
+function getNextQuoteNum(){
+  const jobs=JSON.parse(localStorage.getItem('slq_jobs')||'[]');
+  if(!jobs.length)return 'SL-100';
+  const nums=jobs.map(j=>j.orderNum||'').filter(n=>n.startsWith('SL-')).map(n=>parseInt(n.replace('SL-',''))||0);
+  const max=nums.length?Math.max(...nums):99;
+  return 'SL-'+(max+1);
+}
+
+// ── FREIGHT CALC ─────────────────────────────────────────────
+function calcFreight(){
+  const type=document.getElementById('freightType')?.value||'none';
+  const rural=document.getElementById('freightRural')?.value==='yes';
+  const result=document.getElementById('freightResult');
+  if(!result)return;
+  if(type==='none'){result.style.display='none';return;}
+  const prices={courier_a5:6.23,courier_a4:6.55,courier_a3:7.30,transport:59.26};
+  let wholesale=prices[type]||0;
+  if(rural)wholesale+=7.68;
+  const retail=wholesale*2.1;
+  document.getElementById('freightWholesale').textContent=fmt(wholesale);
+  document.getElementById('freightRetail').textContent=fmt(retail);
+  result.style.display='block';
+  autosave();
+}
+
+// ── VOICE INPUT ───────────────────────────────────────────────
+var voiceSupported = ('webkitSpeechRecognition' in window)||('SpeechRecognition' in window);
+
+function initVoice(){
+  // Just check support - we create fresh instances each time on iOS
+  if(!voiceSupported) console.log('Voice not supported');
+}
+
+function startVoice(inputEl){
+  if(!voiceSupported){
+    showToast('Voice input not supported on this browser');
+    return;
+  }
+  try{
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-NZ';
+    rec.onstart = function(){ showToast('🎤 Listening...'); };
+    rec.onresult = function(e){
+      var transcript = e.results[0][0].transcript.trim();
+      var num = transcript.replace(/[^0-9.]/g,'');
+      if(num && inputEl){
+        inputEl.value = num;
+        inputEl.dispatchEvent(new Event('change'));
+        showToast('✓ Got: ' + num + 'mm');
+      }
+    };
+    rec.onerror = function(e){
+      showToast('Voice error: ' + e.error);
+    };
+    rec.onend = function(){};
+    rec.start();
+  }catch(e){
+    showToast('Voice error: ' + e.message);
+  }
+}
+
+// ── COLOUR CARRY-FORWARD ──────────────────────────────────────
+function getLastColour(type, field){
+  // Get the most recently set colour for a given product type and field
+  const typeItems=items.filter(i=>i.type===type);
+  if(!typeItems.length)return null;
+  return typeItems[typeItems.length-1][field]||null;
+}
+
+// ── UPDATED newQuote - saves job first ────────────────────────
+function manualSaveJob(){
+  const custName = document.getElementById('custName').value||'';
+  if(!custName && items.length===0){
+    showToast('Add customer details and items first');
+    return;
+  }
+  saveCurrentJob();
+  showToast('✓ Job saved to history!');
+}
+
+function newQuote(){
+  if(!confirm('Save current job and start a new quote?'))return;
+  saveCurrentJob();
+  localStorage.removeItem('slq3');
+  items=[];discountPct=0;nextId=1;
+  ['custName','custPhone','custEmail','custAddress','quoteNotes','orderNotes'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  const ref=document.getElementById('referral');if(ref)ref.value='';
+  const refOther=document.getElementById('referralOther');if(refOther)refOther.value='';
+  document.getElementById('itemsList').innerHTML='';
+  // Set new quote number
+  if(document.getElementById('orderNum'))document.getElementById('orderNum').value=getNextQuoteNum();
+  if(document.getElementById('orderDate'))document.getElementById('orderDate').value=new Date().toLocaleDateString('en-NZ');
+  updateSummary();
+  switchTab('customer');
+  showToast('New quote started!');
+}
+
+// ── INIT APP ──────────────────────────────────────────────────
+function initApp(){
+  try{
+    if(document.getElementById('orderDate'))
+      document.getElementById('orderDate').value=new Date().toLocaleDateString('en-NZ');
+    loadState();
+    if(document.getElementById('orderNum')&&!document.getElementById('orderNum').value)
+      document.getElementById('orderNum').value=getNextQuoteNum();
+    updateSummary();
+    initVoice();
+  }catch(e){
+    console.error('initApp error:',e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const lock = document.getElementById('pinLock');
+  if(sessionStorage.getItem('pin_ok')==='1'){
+    if(lock) lock.style.display='none';
+    initApp();
+  } else {
+    if(lock) lock.style.display='flex';
+  }
 });
 </script>
 </body>
